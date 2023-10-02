@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package>
+  <name>iiwa_setup</name>
+  <version>1.0.0</version>
+  <description>
+    This package contains models for Drake simulation in the iiwa_setup repo.
+  </description>
+  <author email="nepfaff@mit.edu">Nicholas Ezra Pfaff</author>
+  <maintainer email="nepfaff@mit.edu">Nicholas Ezra Pfaff</maintainer>
+  <license>BSD</license>
+</package>
