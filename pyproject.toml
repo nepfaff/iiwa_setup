@@ -26,7 +26,7 @@ poetry-pre-commit-plugin = "^0.1.2"
 profile = 'black'
 lines_between_types = 1
 combine_as_imports = true
-known_first_party = ['robot_payload_id']
+known_first_party = ['iiwa_setup']
 
 [build-system]
 requires = ["poetry-core"]
