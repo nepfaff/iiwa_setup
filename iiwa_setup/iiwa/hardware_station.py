@@ -35,7 +35,7 @@ class IiwaHardwareStationDiagram(Diagram):
 
         # Internal Station
         self.internal_meshcat = StartMeshcat()
-        self.internal_station = builder.AddNamedSystem(
+        self.internal_station: Diagram = builder.AddNamedSystem(
             "internal_station",
             MakeHardwareStation(
                 scenario=scenario,
@@ -47,7 +47,7 @@ class IiwaHardwareStationDiagram(Diagram):
 
         # External Station
         self.external_meshcat = StartMeshcat()
-        self._external_station = builder.AddNamedSystem(
+        self._external_station: Diagram = builder.AddNamedSystem(
             "external_station",
             MakeHardwareStation(
                 scenario=scenario,
@@ -63,7 +63,7 @@ class IiwaHardwareStationDiagram(Diagram):
             self.internal_station.GetInputPort("iiwa.position"),
         )
         if has_wsg:
-            wsg_state_demux = builder.AddSystem(Demultiplexer(2, 1))
+            wsg_state_demux: Demultiplexer = builder.AddSystem(Demultiplexer(2, 1))
             builder.Connect(
                 self._external_station.GetOutputPort("wsg.state_measured"),
                 wsg_state_demux.get_input_port(),
@@ -94,7 +94,7 @@ class IiwaHardwareStationDiagram(Diagram):
             "iiwa.velocity_estimated",
         )
         # Export external state output
-        iiwa_state_mux = builder.AddSystem(Multiplexer([7, 7]))
+        iiwa_state_mux: Multiplexer = builder.AddSystem(Multiplexer([7, 7]))
         builder.Connect(
             self._external_station.GetOutputPort("iiwa.position_measured"),
             iiwa_state_mux.get_input_port(0),
