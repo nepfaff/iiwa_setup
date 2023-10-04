@@ -77,6 +77,10 @@ class IiwaHardwareStationDiagram(Diagram):
         builder.ExportOutput(
             self.internal_station.GetOutputPort("body_poses"), "body_poses"
         )
+        builder.ExportOutput(
+            self.internal_station.GetOutputPort("query_object"), "query_object"
+        )
+
         # Export external station ports
         builder.ExportInput(
             self._external_station.GetInputPort("iiwa.position"), "iiwa.position"
@@ -88,6 +92,10 @@ class IiwaHardwareStationDiagram(Diagram):
         builder.ExportOutput(
             self._external_station.GetOutputPort("iiwa.position_commanded"),
             "iiwa.position_commanded",
+        )
+        builder.ExportOutput(
+            self._external_station.GetOutputPort("iiwa.position_measured"),
+            "iiwa.position_measured",
         )
         builder.ExportOutput(
             self._external_station.GetOutputPort("iiwa.velocity_estimated"),
