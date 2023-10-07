@@ -13,6 +13,7 @@ class DiffIKPathFollowingController(Diagram):
     """
     A controller for following a pose trajectory with differential inverse kinematics.
     """
+
     def __init__(self, controller_plant: MultibodyPlant, control_frame_name: str):
         """
         Args:
