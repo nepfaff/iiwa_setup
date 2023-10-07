@@ -29,7 +29,7 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
         else """
     directives:
     - add_directives:
-        file: package://iiwa_setup/iiwa.dmd.yaml
+        file: package://iiwa_setup/iiwa7.dmd.yaml
     plant_config:
         # For some reason, this requires a small timestep
         time_step: 0.0001
