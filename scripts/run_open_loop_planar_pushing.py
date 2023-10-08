@@ -18,27 +18,15 @@ from iiwa_setup.iiwa import IiwaHardwareStationDiagram
 
 
 def main(
+    scenario_str: str,
     use_hardware: bool,
     html_path: str,
     pushing_start_pose: RigidTransform,
     pushing_pose_trajectory: PiecewisePose,
 ) -> None:
-    scenario_data = """
-    directives:
-    - add_directives:
-        file: package://iiwa_setup/iiwa7.dmd.yaml
-    plant_config:
-        # For some reason, this requires a small timestep
-        time_step: 0.0001
-        contact_model: "hydroelastic"
-        discrete_contact_solver: "sap"
-    model_drivers:
-        iiwa: !IiwaDriver {}
-    """
-
     builder = DiagramBuilder()
 
-    scenario = load_scenario(data=scenario_data)
+    scenario = load_scenario(data=scenario_str)
     station: IiwaHardwareStationDiagram = builder.AddNamedSystem(
         "station",
         IiwaHardwareStationDiagram(
@@ -102,6 +90,9 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--iiwa14", action="store_true", help="Whether to use iiwa14 instead of iiwa7."
+    )
+    parser.add_argument(
         "--use_hardware",
         type=bool,
         default=False,
@@ -125,6 +116,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logging.basicConfig(level=args.log_level)
 
+    scenario_str = f"""
+    directives:
+    - add_directives:
+        file: package://iiwa_setup/iiwa{"14" if args.iiwa14 else "7"}.dmd.yaml
+    plant_config:
+        # For some reason, this requires a small timestep
+        time_step: 0.0001
+        contact_model: "hydroelastic"
+        discrete_contact_solver: "sap"
+    model_drivers:
+        iiwa: !IiwaDriver {{}}
+    """
+
     # TODO: The path should be passes as an argument
     poses = [
         RigidTransform(RollPitchYaw(np.pi, 0.0, np.pi / 2), [0.0, -0.45, 0.3]),
@@ -137,6 +141,7 @@ if __name__ == "__main__":
     )
 
     main(
+        scenario_str=scenario_str,
         use_hardware=args.use_hardware,
         html_path=args.html_path,
         pushing_start_pose=poses[0],
