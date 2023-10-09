@@ -5,6 +5,8 @@ from pydrake.all import (
     Demultiplexer,
     Diagram,
     DiagramBuilder,
+    ModelInstanceIndex,
+    MultibodyPlant,
     Multiplexer,
     StartMeshcat,
 )
@@ -114,3 +116,15 @@ class IiwaHardwareStationDiagram(Diagram):
         builder.ExportOutput(iiwa_state_mux.get_output_port(), "iiwa.state_estimated")
 
         builder.BuildInto(self)
+
+    def get_plant(self) -> MultibodyPlant:
+        return self.internal_station.GetSubsystemByName("plant")
+
+    def get_iiwa_controller_plant(self) -> MultibodyPlant:
+        return self.internal_station.GetSubsystemByName(
+            "iiwa.controller"
+        ).get_multibody_plant_for_control()
+
+    def get_model_instance(self, model_name: str) -> ModelInstanceIndex:
+        plant = self.get_plant()
+        return plant.GetModelInstanceByName(model_name)

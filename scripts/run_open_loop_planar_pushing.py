@@ -34,9 +34,7 @@ def main(
         ),
     )
 
-    controller_plant = station.internal_station.GetSubsystemByName(
-        "iiwa.controller"
-    ).get_multibody_plant_for_control()
+    controller_plant = station.get_iiwa_controller_plant()
     controller: OpenLoopPlanarPushingController = builder.AddNamedSystem(
         "open_loop_planar_pushing_controller",
         OpenLoopPlanarPushingController(

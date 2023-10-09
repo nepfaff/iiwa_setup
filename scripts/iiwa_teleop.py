@@ -49,9 +49,7 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
             scenario=scenario, has_wsg=has_wsg, use_hardware=use_hardware
         ),
     )
-    controller_plant = station.internal_station.GetSubsystemByName(
-        "iiwa.controller"
-    ).get_multibody_plant_for_control()
+    controller_plant = station.get_iiwa_controller_plant()
     differential_ik = AddIiwaDifferentialIK(
         builder,
         controller_plant,
