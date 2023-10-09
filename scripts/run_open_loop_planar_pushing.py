@@ -131,9 +131,9 @@ if __name__ == "__main__":
 
     # TODO: The path should be passes as an argument
     poses = [
-        RigidTransform(RollPitchYaw(np.pi, 0.0, np.pi / 2), [0.0, -0.45, 0.3]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, np.pi / 2), [0.0, -0.6, 0.3]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, np.pi / 2), [0.0, -0.75, 0.3]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.45, 0.0, 0.3]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.6, 0.0, 0.3]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.75, 0.0, 0.3]),
     ]
     pushing_pose_traj = PiecewisePose.MakeLinear(
         times=np.arange(len(poses)),
