@@ -32,3 +32,12 @@ Activate the environment:
 ```
 poetry shell
 ```
+
+### Optitrack (Optional)
+
+[Drake's optitrack driver](https://github.com/RobotLocomotion/optitrack-driver) must be
+installed manually to use the optitrack functionality.
+
+Build and install the wheel as described
+[here](https://github.com/RobotLocomotion/optitrack-driver#to-build-a-wheel). Make sure
+to install the wheel from inside the poetry virtual environment.
