@@ -33,6 +33,17 @@ Activate the environment:
 poetry shell
 ```
 
+### iiwa Driver
+
+[Drake's iiwa driver](https://github.com/RobotLocomotion/drake-iiwa-driver) must be installed manually to use the real iiwa robot.
+
+The FRI source can be downloaded from [here](https://mitprod-my.sharepoint.com/:u:/g/personal/nepfaff_mit_edu/EdUdfStUexZKqlfwKLTKOyUBmpoI3H1ylzit-813TMV1Eg?e=HRWaIv) and installed using the following instructions:
+```bash
+cd kuka-fri
+unzip /path/to/your/copy/of/FRI-Client-SDK_Cpp-1_7.zip
+patch -p1 < ../fri_udp_connection_file_descriptor.diff
+```
+
 ### Optitrack (Optional)
 
 [Drake's optitrack driver](https://github.com/RobotLocomotion/optitrack-driver) must be
