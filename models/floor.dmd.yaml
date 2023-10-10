@@ -1,0 +1,10 @@
+directives:
+- add_model:
+    name: floor
+    file: package://iiwa_setup/floor.sdf
+
+- add_weld:
+    parent: world
+    child: floor::floor_base_link
+    X_PC:
+        translation: [0.0, 0.0, -0.05]

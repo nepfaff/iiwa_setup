@@ -1,0 +1,4 @@
+directives:
+- add_model:
+    name: sugar_box
+    file: package://iiwa_setup/sugar_box.sdf
