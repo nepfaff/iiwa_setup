@@ -52,3 +52,9 @@ installed manually to use the optitrack functionality.
 Build and install the wheel as described
 [here](https://github.com/RobotLocomotion/optitrack-driver#to-build-a-wheel). Make sure
 to install the wheel from inside the poetry virtual environment.
+
+## Executing code on the real robot
+
+1. Start the torque or position driver on the teach pendant.
+2. Run the iiwa driver by running `bazel run //kuka-driver:kuka_driver` from `drake-iiwa-driver`.
+3. Run the desired script with the `--use_hardware` flag.
