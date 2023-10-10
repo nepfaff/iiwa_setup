@@ -15,6 +15,7 @@ from pydrake.all import (
 
 from iiwa_setup.controllers import OpenLoopPlanarPushingController
 from iiwa_setup.iiwa import IiwaHardwareStationDiagram
+from iiwa_setup.util import NoDrakeDifferentialIKFilter
 
 
 def main(
@@ -108,7 +109,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    logging.basicConfig(level=args.log_level)
+    logging_handler = logging.StreamHandler()
+    logging_handler.addFilter(NoDrakeDifferentialIKFilter())
+    logging.basicConfig(level=args.log_level, handlers=[logging_handler])
 
     scenario_str = f"""
     directives:
