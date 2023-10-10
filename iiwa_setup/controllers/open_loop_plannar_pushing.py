@@ -32,7 +32,7 @@ from iiwa_setup.motion_planning import (
     solve_global_inverse_kinematics,
 )
 
-from .diff_ik_path_following import DiffIKPathFollowingController
+from .diff_ik_path_following import DiffIKPathFollowingController, DiffIKReseter
 from .trajectory_sources import TrajectoryWithTimingInformationSource
 
 
@@ -180,10 +180,10 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
         inverse kinematics.
         """
         state = context.get_abstract_state(int(self._fsm_state_idx)).get_value()
-        if (
-            state == OpenLoopPlanarPushingPlannerState.PUSH
-            or state == OpenLoopPlanarPushingPlannerState.FINISHED
-        ):
+        if state in [
+            OpenLoopPlanarPushingPlannerState.PUSH,
+            OpenLoopPlanarPushingPlannerState.FINISHED,
+        ]:
             # Pose path
             output.set_value(InputPortIndex(2))
         else:
@@ -312,6 +312,10 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
             ):
                 return
 
+            logging.info("Transitioning to PLAN_PUSH FSM state.")
+            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.PLAN_PUSH)
+
+        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.PLAN_PUSH:
             timing_information.start_pushing = current_time + self._wait_push_delay_s
             timing_information.end_pushing = (
                 timing_information.start_pushing
@@ -321,10 +325,6 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
                 timing_information
             )
 
-            logging.info("Transitioning to PLAN_PUSH FSM state.")
-            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.PLAN_PUSH)
-
-        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.PLAN_PUSH:
             state.get_mutable_abstract_state(
                 self._current_pose_trajectory_idx
             ).set_value(
@@ -362,6 +362,9 @@ class OpenLoopPlanarPushingController(Diagram):
     joint-space trajectory (NOTE that the trajectory is computed without collision
     checks). It then executes the provided `pushing_pose_trajectory` with a
     differential inverse kinematics controller.
+
+    NOTE: The simulator context must be set using `set_context` before starting the
+    simulation.
     """
 
     def __init__(
@@ -440,13 +443,21 @@ class OpenLoopPlanarPushingController(Diagram):
             self._planer.GetOutputPort("pose_trajectory"),
             diff_ik_pose_path_follower.GetInputPort("pose_trajectory"),
         )
+
+        self._diff_ik_reseter: DiffIKReseter = builder.AddNamedSystem(
+            "DiffIKReseter",
+            DiffIKReseter(
+                num_joint_positions=num_joint_positions,
+                diff_ik_pose_path_follower=diff_ik_pose_path_follower,
+            ),
+        )
         builder.Connect(
             self._planer.GetOutputPort("reset_diff_ik"),
-            diff_ik_pose_path_follower.GetInputPort("reset_diff_ik"),
+            self._diff_ik_reseter.GetInputPort("reset_diff_ik"),
         )
-        builder.ExportInput(
-            diff_ik_pose_path_follower.GetInputPort("iiwa.state_estimated"),
-            "iiwa.state_estimated",
+        builder.ConnectToSame(
+            self._planer.GetInputPort("iiwa.position_measured"),
+            self._diff_ik_reseter.GetInputPort("iiwa.position_measured"),
         )
 
         # Switch for switching between joint trajectory source and differential IK
@@ -475,3 +486,10 @@ class OpenLoopPlanarPushingController(Diagram):
     def is_finished(self) -> bool:
         """Returns True if the task has been completed and False otherwise."""
         return self._planer.is_finished()
+
+    def set_context(self, context: Context) -> None:
+        """
+        Sets the simulator context. NOTE: This must be called before starting the
+        simulation.
+        """
+        self._diff_ik_reseter.set_context(context)

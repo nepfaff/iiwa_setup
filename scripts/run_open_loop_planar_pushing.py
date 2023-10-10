@@ -53,10 +53,6 @@ def main(
         controller.GetInputPort("iiwa.position_measured"),
     )
     builder.Connect(
-        station.GetOutputPort("iiwa.state_estimated"),
-        controller.GetInputPort("iiwa.state_estimated"),
-    )
-    builder.Connect(
         controller.GetOutputPort("iiwa.position"),
         station.GetInputPort("iiwa.position"),
     )
@@ -69,13 +65,16 @@ def main(
     simulator = Simulator(diagram)
     simulator.set_target_realtime_rate(1.0)
 
+    context = simulator.get_context()
+    controller.set_context(context)
+
     visualizer.StartRecording()
     station.internal_meshcat.AddButton("Stop Simulation")
     while (
         station.internal_meshcat.GetButtonClicks("Stop Simulation") < 1
         and not controller.is_finished()
     ):
-        simulator.AdvanceTo(simulator.get_context().get_time() + 0.1)
+        simulator.AdvanceTo(context.get_time() + 0.1)
     station.internal_meshcat.DeleteButton("Stop Simulation")
     visualizer.StopRecording()
     visualizer.PublishRecording()
@@ -109,6 +108,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
     logging_handler = logging.StreamHandler()
     logging_handler.addFilter(NoDrakeDifferentialIKFilter())
     logging.basicConfig(level=args.log_level, handlers=[logging_handler])
@@ -128,9 +128,9 @@ if __name__ == "__main__":
 
     # TODO: The path should be passed as an argument
     poses = [
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.45, 0.0, 0.3]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.6, 0.0, 0.3]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.7, 0.0, 0.3]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.5, 0.0, 0.25]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.6, 0.0, 0.25]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.7, 0.0, 0.25]),
     ]
     pushing_pose_traj = PiecewisePose.MakeLinear(
         times=np.arange(len(poses)),
