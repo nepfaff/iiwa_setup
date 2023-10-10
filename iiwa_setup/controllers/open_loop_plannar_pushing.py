@@ -7,9 +7,11 @@ import numpy as np
 
 from pydrake.all import (
     AbstractValue,
+    BasicVector,
     Context,
     Diagram,
     DiagramBuilder,
+    DiscreteValues,
     InputPortIndex,
     LeafSystem,
     MultibodyPlant,
@@ -39,7 +41,7 @@ class OpenLoopPlanarPushingPlannerState(Enum):
 
     PLAN_MOVE_TO_START = 0
     MOVE_TO_START = 1
-    WAIT_PUSH = 2
+    PLAN_PUSH = 2
     PUSH = 3
     FINISHED = 4
 
@@ -131,6 +133,10 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
             )
         )
         """The current pose trajectory."""
+        self._current_iiwa_positions_idx = int(
+            self.DeclareDiscreteState(num_joint_positions)
+        )
+        """The current iiwa positions. These are used to command the robot to stay idle."""
 
         # Input ports
         self._iiwa_position_measured_input_port = self.DeclareVectorInputPort(
@@ -158,7 +164,13 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
             lambda: AbstractValue.Make(PiecewisePoseWithTimingInformation()),
             self._get_current_pose_trajectory,
         )
+        self.DeclareVectorOutputPort(
+            "current_iiwa_positions",
+            num_joint_positions,
+            self._get_current_iiwa_positions,
+        )
 
+        self.DeclareInitializationDiscreteUpdateEvent(self._initialize_discrete_state)
         # Run FSM logic before every trajectory-advancing step
         self.DeclarePerStepUnrestrictedUpdateEvent(self._run_fsm_logic)
 
@@ -181,7 +193,7 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
     def _calc_diff_ik_reset(self, context: Context, output: AbstractValue) -> None:
         """Logic for deciding when to reset the differential IK controller state."""
         state = context.get_abstract_state(int(self._fsm_state_idx)).get_value()
-        if state == OpenLoopPlanarPushingPlannerState.WAIT_PUSH:
+        if state == OpenLoopPlanarPushingPlannerState.PLAN_PUSH:
             # Need to reset before pushing
             output.set_value(True)
         else:
@@ -205,81 +217,22 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
         ).get_value()
         output.set_value(current_pose_traj)
 
-    def _run_fsm_logic(self, context: Context, state: State) -> None:
-        """FSM state transition logic."""
-        current_time = context.get_time()
-        timing_information: OpenLoopPlanarPushingPlanarTimingInformation = (
-            context.get_mutable_abstract_state(self._timing_information_idx).get_value()
-        )
-
-        mutable_fsm_state = state.get_mutable_abstract_state(self._fsm_state_idx)
-        fsm_state_value: OpenLoopPlanarPushingPlannerState = context.get_abstract_state(
-            self._fsm_state_idx
+    def _get_current_iiwa_positions(
+        self, context: Context, output: BasicVector
+    ) -> None:
+        positions = context.get_discrete_state(
+            self._current_iiwa_positions_idx
         ).get_value()
+        output.set_value(positions)
 
-        if fsm_state_value == OpenLoopPlanarPushingPlannerState.PLAN_MOVE_TO_START:
-            q_traj = self._plan_move_to_start(context)
-            state.get_mutable_abstract_state(self._current_joint_traj_idx).set_value(
-                TrajectoryWithTimingInformation(
-                    trajectory=q_traj,
-                    start_time_s=timing_information.start_move_to_start,
-                )
-            )
-            timing_information.end_move_to_start = (
-                timing_information.start_move_to_start + q_traj.end_time()
-            )
-            state.get_mutable_abstract_state(self._timing_information_idx).set_value(
-                timing_information
-            )
-
-            logging.info("Transitioning to MOVE_TO_START FSM state.")
-            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.MOVE_TO_START)
-
-        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.MOVE_TO_START:
-            if current_time <= timing_information.end_move_to_start:
-                return
-
-            timing_information.start_pushing = current_time + self._wait_push_delay_s
-            timing_information.end_pushing = (
-                timing_information.start_pushing
-                + self._pushing_pose_trajectory.end_time()
-            )
-            state.get_mutable_abstract_state(self._timing_information_idx).set_value(
-                timing_information
-            )
-
-            logging.info("Transitioning to WAIT_PUSH FSM state.")
-            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.WAIT_PUSH)
-
-        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.WAIT_PUSH:
-            if current_time < timing_information.start_pushing:
-                return
-
-            state.get_mutable_abstract_state(
-                self._current_pose_trajectory_idx
-            ).set_value(
-                PiecewisePoseWithTimingInformation(
-                    trajectory=self._pushing_pose_trajectory,
-                    start_time_s=timing_information.start_pushing,
-                )
-            )
-
-            logging.info("Transitioning to PUSH FSM state.")
-            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.PUSH)
-
-        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.PUSH:
-            if current_time <= timing_information.end_pushing:
-                return
-
-            logging.info("Transitioning to FINISHED FSM state.")
-            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.FINISHED)
-
-        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.FINISHED:
-            self._is_finished = True
-
-        else:
-            logging.error(f"Invalid FSM state: {fsm_state_value}")
-            exit(1)
+    def _initialize_discrete_state(
+        self, context: Context, discrete_values: DiscreteValues
+    ) -> None:
+        # Initialize the current iiwa positions
+        discrete_values.set_value(
+            self._current_iiwa_positions_idx,
+            self._iiwa_position_measured_input_port.Eval(context),
+        )
 
     def _plan_move_to_start(self, context: Context) -> PathParameterizedTrajectory:
         """
@@ -316,10 +269,87 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
         toppra_traj = reparameterize_with_toppra(
             trajectory=traj,
             plant=self._iiwa_controller_plant,
-            velocity_limits=np.ones(self._num_joint_positions),
-            acceleration_limits=np.ones(self._num_joint_positions),
+            velocity_limits=0.5 * np.ones(self._num_joint_positions),
+            acceleration_limits=0.5 * np.ones(self._num_joint_positions),
         )
         return toppra_traj
+
+    def _run_fsm_logic(self, context: Context, state: State) -> None:
+        """FSM state transition logic."""
+        current_time = context.get_time()
+        timing_information: OpenLoopPlanarPushingPlanarTimingInformation = (
+            context.get_mutable_abstract_state(self._timing_information_idx).get_value()
+        )
+
+        mutable_fsm_state = state.get_mutable_abstract_state(self._fsm_state_idx)
+        fsm_state_value: OpenLoopPlanarPushingPlannerState = context.get_abstract_state(
+            self._fsm_state_idx
+        ).get_value()
+
+        if fsm_state_value == OpenLoopPlanarPushingPlannerState.PLAN_MOVE_TO_START:
+            logging.info("Current state: PLAN_MOVE_TO_START")
+            q_traj = self._plan_move_to_start(context)
+            state.get_mutable_abstract_state(self._current_joint_traj_idx).set_value(
+                TrajectoryWithTimingInformation(
+                    trajectory=q_traj,
+                    start_time_s=timing_information.start_move_to_start,
+                )
+            )
+            timing_information.end_move_to_start = (
+                timing_information.start_move_to_start + q_traj.end_time()
+            )
+            state.get_mutable_abstract_state(self._timing_information_idx).set_value(
+                timing_information
+            )
+
+            logging.info("Transitioning to MOVE_TO_START FSM state.")
+            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.MOVE_TO_START)
+
+        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.MOVE_TO_START:
+            # Add portion of '_wait_push_delay_s' as a margin
+            if current_time <= (
+                timing_information.end_move_to_start + 0.1 * self._wait_push_delay_s
+            ):
+                return
+
+            timing_information.start_pushing = current_time + self._wait_push_delay_s
+            timing_information.end_pushing = (
+                timing_information.start_pushing
+                + self._pushing_pose_trajectory.end_time()
+            )
+            state.get_mutable_abstract_state(self._timing_information_idx).set_value(
+                timing_information
+            )
+
+            logging.info("Transitioning to PLAN_PUSH FSM state.")
+            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.PLAN_PUSH)
+
+        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.PLAN_PUSH:
+            state.get_mutable_abstract_state(
+                self._current_pose_trajectory_idx
+            ).set_value(
+                PiecewisePoseWithTimingInformation(
+                    trajectory=self._pushing_pose_trajectory,
+                    start_time_s=timing_information.start_pushing,
+                )
+            )
+
+            logging.info("Transitioning to PUSH FSM state.")
+            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.PUSH)
+
+        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.PUSH:
+            if current_time <= timing_information.end_pushing:
+                return
+
+            logging.info("Transitioning to FINISHED FSM state.")
+            mutable_fsm_state.set_value(OpenLoopPlanarPushingPlannerState.FINISHED)
+
+        elif fsm_state_value == OpenLoopPlanarPushingPlannerState.FINISHED:
+            self._is_finished = True
+
+        else:
+            logging.error(f"Invalid FSM state: {fsm_state_value}")
+            exit(1)
 
     def is_finished(self) -> bool:
         """Returns True if the task has been completed and False otherwise."""
@@ -390,7 +420,11 @@ class OpenLoopPlanarPushingController(Diagram):
         )
         builder.Connect(
             self._planer.GetOutputPort("joint_position_trajectory"),
-            joint_traj_source.get_input_port(),
+            joint_traj_source.GetInputPort("trajectory"),
+        )
+        builder.Connect(
+            self._planer.GetOutputPort("current_iiwa_positions"),
+            joint_traj_source.GetInputPort("current_cmd"),
         )
 
         diff_ik_pose_path_follower: DiffIKPathFollowingController = (

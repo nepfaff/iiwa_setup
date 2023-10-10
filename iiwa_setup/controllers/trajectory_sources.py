@@ -23,6 +23,10 @@ class TrajectoryWithTimingInformationSource(LeafSystem):
         """
         super().__init__()
 
+        # The current_cmd that should be passed to output when the current trajectory is invalid
+        self._current_cmd_input_port = self.DeclareVectorInputPort(
+            "current_cmd", trajectory_size
+        )
         self._trajectory_input_port = self.DeclareAbstractInputPort(
             "trajectory", AbstractValue.Make(TrajectoryWithTimingInformation())
         )
@@ -34,10 +38,11 @@ class TrajectoryWithTimingInformationSource(LeafSystem):
         current_traj: TrajectoryWithTimingInformation = (
             self._trajectory_input_port.Eval(context)
         )
-        if np.isnan(current_traj.start_time_s):
-            return
         traj_time = context.get_time() - current_traj.start_time_s
-        traj_value = current_traj.trajectory.value(traj_time).ravel()
+        if np.isnan(traj_time):
+            traj_value = self._current_cmd_input_port.Eval(context)
+        else:
+            traj_value = current_traj.trajectory.value(traj_time).ravel()
         output.SetFromVector(traj_value)
 
 
