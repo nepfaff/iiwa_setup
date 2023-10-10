@@ -88,9 +88,6 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--iiwa14", action="store_true", help="Whether to use iiwa14 instead of iiwa7."
-    )
-    parser.add_argument(
         "--use_hardware",
         action="store_true",
         help="Whether to use real world hardware.",
@@ -116,21 +113,21 @@ if __name__ == "__main__":
     scenario_str = f"""
     directives:
     - add_directives:
-        file: package://iiwa_setup/iiwa{"14" if args.iiwa14 else "7"}.dmd.yaml
+        file: package://iiwa_setup/iiwa7_with_cylinder_pusher.dmd.yaml
     plant_config:
-        # For some reason, this requires a small timestep
-        time_step: 0.0001
+        # Cannot use bigger timesteps on the real robot
+        time_step: 0.001
         contact_model: "hydroelastic"
         discrete_contact_solver: "sap"
     model_drivers:
         iiwa: !IiwaDriver {{}}
     """
 
-    # TODO: The path should be passes as an argument
+    # TODO: The path should be passed as an argument
     poses = [
         RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.45, 0.0, 0.3]),
         RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.6, 0.0, 0.3]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.75, 0.0, 0.3]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.7, 0.0, 0.3]),
     ]
     pushing_pose_traj = PiecewisePose.MakeLinear(
         times=np.arange(len(poses)),

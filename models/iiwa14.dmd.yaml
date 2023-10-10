@@ -8,7 +8,7 @@ directives:
         iiwa_joint_3: [0]
         iiwa_joint_4: [-1.2]
         iiwa_joint_5: [0]
-        iiwa_joint_6: [ 1.6]
+        iiwa_joint_6: [1.6]
         iiwa_joint_7: [0]
 - add_weld:
     parent: world
