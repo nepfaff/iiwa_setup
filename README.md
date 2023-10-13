@@ -58,3 +58,18 @@ to install the wheel from inside the poetry virtual environment.
 1. Start the torque or position driver on the teach pendant.
 2. Run the iiwa driver by running `bazel run //kuka-driver:kuka_driver` from `drake-iiwa-driver`.
 3. Run the desired script with the `--use_hardware` flag.
+
+## Optitrack
+
+To use the optitrack system, run the optitrack client from the
+[driver]((https://github.com/RobotLocomotion/optitrack-driver)) directory:
+```
+bazel run //src:optitrack_client
+```
+
+### Inspecting optitrack LCM messages
+
+Clone [drake](https://github.com/RobotLocomotion/drake) and run LCM Spy from inside the drake directory:
+```bash
+bazel run lcmtypes:drake-lcm-spy
+```
