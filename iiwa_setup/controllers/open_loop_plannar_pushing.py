@@ -77,6 +77,8 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
         gripper_frame_name: str,
         initial_delay_s: float,
         wait_push_delay_s: float,
+        move_to_start_velocity_limits: np.ndarray,
+        move_to_start_acceleration_limits: np.ndarray,
     ):
         """
         Args:
@@ -92,6 +94,12 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
             initial_delay_s (float): The initial delay before starting a control action.
             wait_push_delay_s (float): The delay between moving to the
             `pushing_start_pose` and executing the `pushing_pose_trajectory`.
+            move_to_start_velocity_limits (np.ndarray): The robot velocity limits
+            for moving to the starting position. Shape (N,7) where N are the number
+            of robot joints.
+            move_to_start_acceleration_limits (np.ndarray): The robot acceleration
+            limits for moving to the starting position. Shape (N,7) where N are the
+            number of robot joints.
         """
         super().__init__()
 
@@ -103,6 +111,8 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
         self._gripper_frame_name = gripper_frame_name
         self._pushing_pose_trajectory = pushing_pose_trajectory
         self._wait_push_delay_s = wait_push_delay_s
+        self._move_to_start_velocity_limits = move_to_start_velocity_limits
+        self._move_to_start_acceleration_limits = move_to_start_acceleration_limits
 
         # Internal state
         self._fsm_state_idx = int(
@@ -269,8 +279,8 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
         toppra_traj = reparameterize_with_toppra(
             trajectory=traj,
             plant=self._iiwa_controller_plant,
-            velocity_limits=0.5 * np.ones(self._num_joint_positions),
-            acceleration_limits=0.5 * np.ones(self._num_joint_positions),
+            velocity_limits=self._move_to_start_velocity_limits,
+            acceleration_limits=self._move_to_start_acceleration_limits,
         )
         return toppra_traj
 
@@ -376,6 +386,8 @@ class OpenLoopPlanarPushingController(Diagram):
         gripper_frame_name: str,
         initial_delay_s: float,
         wait_push_delay_s: float,
+        move_to_start_velocity_limits: np.ndarray,
+        move_to_start_acceleration_limits: np.ndarray,
     ):
         """
         Args:
@@ -391,6 +403,12 @@ class OpenLoopPlanarPushingController(Diagram):
             initial_delay_s (float): The initial delay before starting a control action.
             wait_push_delay_s (float): The delay between moving to the
             `pushing_start_pose` and executing the `pushing_pose_trajectory`.
+            move_to_start_velocity_limits (np.ndarray): The robot velocity limits
+            for moving to the starting position. Shape (N,7) where N are the number
+            of robot joints.
+            move_to_start_acceleration_limits (np.ndarray): The robot acceleration
+            limits for moving to the starting position. Shape (N,7) where N are the
+            number of robot joints.
         """
         super().__init__()
 
@@ -406,6 +424,8 @@ class OpenLoopPlanarPushingController(Diagram):
                 gripper_frame_name=gripper_frame_name,
                 initial_delay_s=initial_delay_s,
                 wait_push_delay_s=wait_push_delay_s,
+                move_to_start_velocity_limits=move_to_start_velocity_limits,
+                move_to_start_acceleration_limits=move_to_start_acceleration_limits,
             ),
         )
         builder.ExportInput(
