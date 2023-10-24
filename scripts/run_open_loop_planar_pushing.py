@@ -24,6 +24,8 @@ def main(
     html_path: str,
     pushing_start_pose: RigidTransform,
     pushing_pose_trajectory: PiecewisePose,
+    move_to_start_velocity_limits: np.ndarray,
+    move_to_start_acceleration_limits: np.ndarray,
 ) -> None:
     builder = DiagramBuilder()
 
@@ -46,6 +48,8 @@ def main(
             gripper_frame_name="iiwa_link_7",
             initial_delay_s=1.0,
             wait_push_delay_s=1.0,
+            move_to_start_velocity_limits=move_to_start_velocity_limits,
+            move_to_start_acceleration_limits=move_to_start_acceleration_limits,
         ),
     )
     builder.Connect(
@@ -143,4 +147,6 @@ if __name__ == "__main__":
         html_path=args.html_path,
         pushing_start_pose=poses[0],
         pushing_pose_trajectory=pushing_pose_traj,
+        move_to_start_velocity_limits=0.1 * np.ones(7),
+        move_to_start_acceleration_limits=0.1 * np.ones(7),
     )
