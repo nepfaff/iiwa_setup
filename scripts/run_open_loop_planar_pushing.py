@@ -113,6 +113,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    logging.basicConfig(level=args.log_level)
     logging.getLogger("drake").addFilter(NoDrakeDifferentialIKFilter())
 
     scenario_str = f"""
