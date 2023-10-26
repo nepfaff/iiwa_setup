@@ -17,6 +17,7 @@ from pydrake.all import (
     MultibodyPlant,
     Quaternion,
     RigidTransform,
+    RollPitchYaw,
     RotationMatrix,
     State,
 )
@@ -40,8 +41,10 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         object_instance_idx: ModelInstanceIndex,
         optitrack_iiwa_id: int,
         optitrack_body_id: int,
-        retain_z: bool,
         X_optitrackBody_plantBody_world: RigidTransform,
+        retain_z: bool,
+        retain_roll: bool,
+        retain_pitch: bool,
         X_world_iiwa: RigidTransform = RigidTransform.Identity(),
     ):
         """
@@ -54,12 +57,14 @@ class OptitrackObjectTransformUpdater(LeafSystem):
             base.
             optitrack_body_id (int): The optitrack body ID that corresponds to the
             object.
+            X_optitrackBody_plantBody (RigidTransform): The trasform from the optitrack
+            pose to the plant/ simulated pose, expressed in the world frame.
             retain_z (bool): Whether to keep the current z position of the object rather
             than changing it to the optitrack measurement. This can be useful for planar
             pushing tasks, where we know that z doesn't change and small measurement
             errors can lead to the object falling through objects.
-            X_optitrackBody_plantBody (RigidTransform): The trasform from the optitrack
-            pose to the plant/ simulated pose, expressed in the world frame
+            retain_roll (bool): Similar to `retain_z`.
+            retain_pitch (bool): Similar to `retain_z`.
             X_world_iiwa (RigidTransform): The pose of the iiwa base with respect ot the
             world frame.
         """
@@ -70,8 +75,10 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         self._object_instance_idx = object_instance_idx
         self._optitrack_iiwa_id = optitrack_iiwa_id
         self._optitrack_body_id = optitrack_body_id
-        self._retain_z = retain_z
         self._X_optitrackBody_plantBody_world = X_optitrackBody_plantBody_world
+        self._retain_z = retain_z
+        self._retain_roll = retain_roll
+        self._retain_pitch = retain_pitch
         self._X_world_iiwa = X_world_iiwa
 
         self._optitrack_frame_index = self.DeclareAbstractInputPort(
@@ -122,6 +129,7 @@ class OptitrackObjectTransformUpdater(LeafSystem):
             object_body.xyz,
         )
 
+        # Find the body pose in the plant world frame
         X_world_optitrackBody: RigidTransform = (
             self._X_world_iiwa @ X_iiwa_origin @ X_origin_optitrackBody
         )
@@ -133,17 +141,39 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         X_world_plantBody: RigidTransform = (
             X_world_optitrackBody @ X_optitrackBody_plantBody
         )
-        object_quaternion = X_world_plantBody.rotation().ToQuaternion().wxyz()
+        object_quaternion = copy(X_world_plantBody.rotation().ToQuaternion())
         object_translation = copy(X_world_plantBody.translation())
-        if self._retain_z:
-            current_object_positions = self._plant.GetPositions(
-                self._plant_context, self._object_instance_idx
-            )
-            object_translation[2] = current_object_positions[-1]
-        object_pose = np.concatenate((object_quaternion, object_translation))
 
+        # Optionally only ubdate a subset of the positions
+        current_object_positions = self._plant.GetPositions(
+            self._plant_context, self._object_instance_idx
+        )
+        if self._retain_z:
+            object_translation[2] = current_object_positions[-1]
+        # Creating a Quaternion might throw an error if the input is not perfectly
+        # normalized
+        current_object_RPY = (
+            RotationMatrix(
+                Quaternion(
+                    current_object_positions[:4]
+                    / np.linalg.norm(current_object_positions[:4])
+                )
+            )
+            .ToRollPitchYaw()
+            .vector()
+        )
+        object_RPY = RotationMatrix(object_quaternion).ToRollPitchYaw().vector()
+        if self._retain_roll:
+            object_RPY[0] = current_object_RPY[0]
+        if self._retain_pitch:
+            object_RPY[1] = current_object_RPY[1]
+        object_quaternion = RotationMatrix(RollPitchYaw(object_RPY)).ToQuaternion()
+
+        new_object_positions = np.concatenate(
+            (object_quaternion.wxyz(), object_translation)
+        )
         self._plant.SetPositions(
-            self._plant_context, self._object_instance_idx, object_pose
+            self._plant_context, self._object_instance_idx, new_object_positions
         )
 
     @staticmethod
@@ -169,8 +199,10 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
         object_name: str,
         optitrack_iiwa_id: int,
         optitrack_body_id: int,
-        retain_z: bool,
         X_optitrackBody_plantBody_world: RigidTransform,
+        retain_z: bool = False,
+        retain_roll: bool = False,
+        retain_pitch: bool = False,
         X_world_iiwa: RigidTransform = RigidTransform.Identity(),
     ):
         """
@@ -182,12 +214,14 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
             should be set.
             optitrack_body_id (int): The optitrack body ID that corresponds to the
             object.
+            X_optitrackBody_plantBody (RigidTransform): The trasform from the optitrack
+            pose to the plant/ simulated pose, expressed in the world frame.
             retain_z (bool): Whether to keep the current z position of the object rather
             than changing it to the optitrack measurement. This can be useful for planar
             pushing tasks, where we know that z doesn't change and small measurement
             errors can lead to the object falling through objects.
-            X_optitrackBody_plantBody (RigidTransform): The trasform from the optitrack
-            pose to the plant/ simulated pose, expressed in the world frame
+            retain_roll (bool): Similar to `retain_z`.
+            retain_pitch (bool): Similar to `retain_z`.
             X_world_iiwa (RigidTransform): The pose of the iiwa base with respect ot the
             world frame.
         """
@@ -207,8 +241,10 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
                     object_instance_idx=manipuland_instance,
                     optitrack_iiwa_id=optitrack_iiwa_id,
                     optitrack_body_id=optitrack_body_id,
-                    retain_z=retain_z,
                     X_optitrackBody_plantBody_world=X_optitrackBody_plantBody_world,
+                    retain_z=retain_z,
+                    retain_roll=retain_roll,
+                    retain_pitch=retain_pitch,
                     X_world_iiwa=X_world_iiwa,
                 ),
             )

@@ -87,7 +87,6 @@ def main(
                     object_name=object_name,
                     optitrack_iiwa_id=optitrack_iiwa_id,
                     optitrack_body_id=optitrack_body_id,
-                    retain_z=False,
                     X_optitrackBody_plantBody_world=X_optitrackBody_plantBody_world,
                 ),
             )
