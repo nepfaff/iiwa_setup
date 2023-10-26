@@ -71,6 +71,7 @@ def MakeHardwareStation(
     builder = DiagramBuilder()
 
     # Create the multibody plant and scene graph.
+    sim_plant: MultibodyPlant
     sim_plant, scene_graph = AddMultibodyPlant(
         config=scenario.plant_config, builder=builder
     )
@@ -109,6 +110,13 @@ def MakeHardwareStation(
     builder.ExportOutput(sim_plant.get_contact_results_output_port(), "contact_results")
     builder.ExportOutput(sim_plant.get_state_output_port(), "plant_continuous_state")
     builder.ExportOutput(sim_plant.get_body_poses_output_port(), "body_poses")
+    for i in range(sim_plant.num_model_instances()):
+        model_instance = ModelInstanceIndex(i)
+        model_instance_name = sim_plant.GetModelInstanceName(model_instance)
+        builder.ExportOutput(
+            sim_plant.get_state_output_port(model_instance),
+            f"{model_instance_name}_state",
+        )
 
     diagram = builder.Build()
     diagram.set_name("station")
@@ -186,6 +194,16 @@ class IiwaHardwareStationDiagram(Diagram):
         builder.ExportOutput(
             self.internal_station.GetOutputPort("query_object"), "query_object"
         )
+        internal_plant: MultibodyPlant = self.internal_station.GetSubsystemByName(
+            "plant"
+        )
+        for i in range(internal_plant.num_model_instances()):
+            model_instance = ModelInstanceIndex(i)
+            model_instance_name = internal_plant.GetModelInstanceName(model_instance)
+            port_name = f"{model_instance_name}_state"
+            builder.ExportOutput(
+                self.internal_station.GetOutputPort(port_name), port_name
+            )
 
         # Export external station ports
         builder.ExportInput(
