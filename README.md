@@ -3,11 +3,11 @@ iiwa real world setup
 
 ## Installation
 
-This repo uses Poetry for dependency management. To setup this project, first install
+This repo uses Poetry for dependency management. To set up this project, first install
 [Poetry](https://python-poetry.org/docs/#installation) and, make sure to have Python3.10
 installed on your system.
 
-Then, configure poetry to setup a virtual environment that uses Python 3.10:
+Then, configure poetry to set up a virtual environment that uses Python 3.10:
 ```
 poetry env use python3.10
 ```
@@ -48,8 +48,8 @@ patch -p1 < ../fri_udp_connection_file_descriptor.diff
 
 ### Optitrack (Optional)
 
-[Drake's optitrack driver](https://github.com/RobotLocomotion/optitrack-driver) must be
-installed manually to use the optitrack functionality.
+[Drake's Optitrack driver](https://github.com/RobotLocomotion/optitrack-driver) must be
+installed manually to use the Optitrack functionality.
 
 Build and install the wheel as described
 [here](https://github.com/RobotLocomotion/optitrack-driver#to-build-a-wheel). Make sure
@@ -107,25 +107,25 @@ Optitrack system. These can be identified as described
 
 Set both `R_OptitrackBody_SimBody_W` and `p_OptitrackBody_SimBody_W` to `[0, 0, 0]`.
 
-#### 2. Calibrate the z-position
+#### 2. Determine the reference body's positions
 
 1. Set `is_init = True` and run the script.
-2. Wait a couple of seconds until the printed pose stays approximately static. Then
+2. Wait a few seconds until the printed pose stays approximately static. Then
 note down the printed z-position and terminate the script.
 3. Modify the reference body directive file to include a weld from the world frame to
 the body frame. The weld transform should include the printed z-position, no rotation,
 and planar positions that position the object close to the iiwa base inside the
 Optitrack workspace.
 
-#### 3. Calibrate the remaining transform
+#### 3. Determine the Optitrack body to plant body transform
 
 1. Place the real object at the planar position that corresponds to the weld from step 2.
 Taking the iiwa center as the world origin and using a ruler to measure positions and
 ensuring axis-aligned rotations should be helpful strategies here.
 2. Set `is_init = False` and run the script.
 3. Note down the printed transform and terminate the script.
-4. Substract the printed transform from the reference object weld transform
-(element-wise substraction of the positions and euler angles) and use the result as
+4. Subtract the printed transform from the reference object weld transform
+(element-wise subtraction of the positions and Euler angles) and use the result as
 `R_OptitrackBody_SimBody_W` and `p_OptitrackBody_SimBody_W`.
 5. Run the script and check if both bodies align. If they do, then
 `R_OptitrackBody_SimBody_W` and `p_OptitrackBody_SimBody_W` represent the desired
