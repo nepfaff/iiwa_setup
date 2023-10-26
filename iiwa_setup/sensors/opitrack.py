@@ -6,6 +6,7 @@ import numpy as np
 from optitrack import optitrack_frame_t, optitrack_rigid_body_t
 from pydrake.all import (
     AbstractValue,
+    BasicVector,
     Context,
     Diagram,
     DiagramBuilder,
@@ -81,9 +82,15 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         self._retain_pitch = retain_pitch
         self._X_world_iiwa = X_world_iiwa
 
+        self._object_positions = np.array([np.nan] * 7)
+
         self._optitrack_frame_index = self.DeclareAbstractInputPort(
             "optitrack_frame", AbstractValue.Make(optitrack_frame_t)
         ).get_index()
+
+        self.DeclareVectorOutputPort(
+            "object_positions", 7, self._get_current_object_positions
+        )
 
         # Update object pose before every trajectory-advancing step
         self.DeclarePerStepUnrestrictedUpdateEvent(self._update_object_pose)
@@ -175,6 +182,12 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         self._plant.SetPositions(
             self._plant_context, self._object_instance_idx, new_object_positions
         )
+        self._object_positions = new_object_positions
+
+    def _get_current_object_positions(
+        self, context: Context, output: BasicVector
+    ) -> None:
+        output.set_value(self._object_positions)
 
     @staticmethod
     def get_quaternion_from_optitrack_rigid_body(body: optitrack_rigid_body_t):
@@ -248,6 +261,10 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
                     X_world_iiwa=X_world_iiwa,
                 ),
             )
+        )
+        builder.ExportOutput(
+            self._optitrack_object_transform_updater.GetOutputPort("object_positions"),
+            "object_positions",
         )
 
         optitrack_frame_subscriber: LcmSubscriberSystem = builder.AddNamedSystem(
