@@ -1,0 +1,10 @@
+# The optitrack calibration reference file for sugar_box.dmd.yaml 
+directives:
+  - add_model:
+      name: sugar_box_reference
+      file: package://iiwa_setup/sugar_box.sdf
+#   - add_weld:
+#       parent: world
+#       child: sugar_box_reference::sugar_box_base_link
+#       X_PC:
+#           translation: [0.3, 0, 0.019528]

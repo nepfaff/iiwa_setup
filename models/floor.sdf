@@ -6,14 +6,14 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
-            <size>3 3 0.1</size>
+            <size>5 5 0.1</size>
           </box>
         </geometry>
       </visual>
       <collision name="collision">
         <geometry>
           <box>
-            <size>3 3 0.1</size>
+            <size>5 5 0.1</size>
           </box>
         </geometry>
         <drake:proximity_properties>
