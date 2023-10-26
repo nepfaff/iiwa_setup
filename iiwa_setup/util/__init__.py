@@ -1,1 +1,1 @@
-from .logging import NoDrakeDifferentialIKFilter
+from .logging import BodyPoseLogger, NoDrakeDifferentialIKFilter
