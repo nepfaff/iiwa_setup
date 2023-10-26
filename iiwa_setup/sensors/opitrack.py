@@ -125,10 +125,13 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         X_world_optitrackBody: RigidTransform = (
             self._X_world_iiwa @ X_iiwa_origin @ X_origin_optitrackBody
         )
-        X_world_plantBody = (
-            X_world_optitrackBody
-            @ RigidTransform(X_world_optitrackBody.inverse().rotation())
-            @ self._X_optitrackBody_plantBody_world
+        X_optitrackBody_plantBody = RigidTransform(
+            self._X_optitrackBody_plantBody_world.rotation(),
+            X_world_optitrackBody.inverse().rotation()
+            @ self._X_optitrackBody_plantBody_world.translation(),
+        )
+        X_world_plantBody: RigidTransform = (
+            X_world_optitrackBody @ X_optitrackBody_plantBody
         )
         object_quaternion = X_world_plantBody.rotation().ToQuaternion().wxyz()
         object_translation = copy(X_world_plantBody.translation())

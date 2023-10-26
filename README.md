@@ -122,11 +122,12 @@ Optitrack workspace.
 1. Place the real object at the planar position that corresponds to the weld from step 2.
 Taking the iiwa center as the world origin and using a ruler to measure positions and
 ensuring axis-aligned rotations should be helpful strategies here.
-2. Set `is_init = False` and run the script.
-3. Note down the printed transform and terminate the script.
-4. Subtract the printed transform from the reference object weld transform
+2. Remove the collision geometries from the body SDFormat file.
+3. Set `is_init = False` and run the script.
+4. Note down the printed transform and terminate the script.
+5. Subtract the printed transform from the reference object weld transform
 (element-wise subtraction of the positions and Euler angles) and use the result as
 `R_OptitrackBody_SimBody_W` and `p_OptitrackBody_SimBody_W`.
-5. Run the script and check if both bodies align. If they do, then
+6. Run the script and check if both bodies align. If they do, then
 `R_OptitrackBody_SimBody_W` and `p_OptitrackBody_SimBody_W` represent the desired
 transform.
