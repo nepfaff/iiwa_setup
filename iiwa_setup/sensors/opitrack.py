@@ -41,7 +41,7 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         optitrack_iiwa_id: int,
         optitrack_body_id: int,
         retain_z: bool,
-        X_optitrackBody_plantBody: RigidTransform,
+        X_optitrackBody_plantBody_world: RigidTransform,
         X_world_iiwa: RigidTransform = RigidTransform.Identity(),
     ):
         """
@@ -59,7 +59,7 @@ class OptitrackObjectTransformUpdater(LeafSystem):
             pushing tasks, where we know that z doesn't change and small measurement
             errors can lead to the object falling through objects.
             X_optitrackBody_plantBody (RigidTransform): The trasform from the optitrack
-            pose to the plant/ simulated pose.
+            pose to the plant/ simulated pose, expressed in the world frame
             X_world_iiwa (RigidTransform): The pose of the iiwa base with respect ot the
             world frame.
         """
@@ -71,7 +71,7 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         self._optitrack_iiwa_id = optitrack_iiwa_id
         self._optitrack_body_id = optitrack_body_id
         self._retain_z = retain_z
-        self._X_optitrackBody_plantBody = X_optitrackBody_plantBody
+        self._X_optitrackBody_plantBody_world = X_optitrackBody_plantBody_world
         self._X_world_iiwa = X_world_iiwa
 
         self._optitrack_frame_index = self.DeclareAbstractInputPort(
@@ -122,11 +122,13 @@ class OptitrackObjectTransformUpdater(LeafSystem):
             object_body.xyz,
         )
 
+        X_world_optitrackBody: RigidTransform = (
+            self._X_world_iiwa @ X_iiwa_origin @ X_origin_optitrackBody
+        )
         X_world_plantBody = (
-            self._X_world_iiwa
-            @ X_iiwa_origin
-            @ X_origin_optitrackBody
-            @ self._X_optitrackBody_plantBody
+            X_world_optitrackBody
+            @ RigidTransform(X_world_optitrackBody.inverse().rotation())
+            @ self._X_optitrackBody_plantBody_world
         )
         object_quaternion = X_world_plantBody.rotation().ToQuaternion().wxyz()
         object_translation = copy(X_world_plantBody.translation())
@@ -134,7 +136,7 @@ class OptitrackObjectTransformUpdater(LeafSystem):
             current_object_positions = self._plant.GetPositions(
                 self._plant_context, self._object_instance_idx
             )
-            object_translation[2] = current_object_positions[6]
+            object_translation[2] = current_object_positions[-1]
         object_pose = np.concatenate((object_quaternion, object_translation))
 
         self._plant.SetPositions(
@@ -165,7 +167,7 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
         optitrack_iiwa_id: int,
         optitrack_body_id: int,
         retain_z: bool,
-        X_optitrackBody_plantBody: RigidTransform,
+        X_optitrackBody_plantBody_world: RigidTransform,
         X_world_iiwa: RigidTransform = RigidTransform.Identity(),
     ):
         """
@@ -182,7 +184,7 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
             pushing tasks, where we know that z doesn't change and small measurement
             errors can lead to the object falling through objects.
             X_optitrackBody_plantBody (RigidTransform): The trasform from the optitrack
-            pose to the plant/ simulated pose.
+            pose to the plant/ simulated pose, expressed in the world frame
             X_world_iiwa (RigidTransform): The pose of the iiwa base with respect ot the
             world frame.
         """
@@ -203,7 +205,7 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
                     optitrack_iiwa_id=optitrack_iiwa_id,
                     optitrack_body_id=optitrack_body_id,
                     retain_z=retain_z,
-                    X_optitrackBody_plantBody=X_optitrackBody_plantBody,
+                    X_optitrackBody_plantBody_world=X_optitrackBody_plantBody_world,
                     X_world_iiwa=X_world_iiwa,
                 ),
             )
