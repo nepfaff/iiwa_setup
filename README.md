@@ -131,3 +131,20 @@ ensuring axis-aligned rotations should be helpful strategies here.
 6. Run the script and check if both bodies align. If they do, then
 `R_OptitrackBody_SimBody_W` and `p_OptitrackBody_SimBody_W` represent the desired
 transform.
+
+### Recording Optitrack object pose data
+
+The script `scripts/record_optitrack_body_pose_data.py` can be used for recording
+the pose of an object using optitrack.
+
+Example usage:
+```bash
+python scripts/record_optitrack_body_pose_data.py --out_path sugar_box_logs \
+--object_directive "package://iiwa_setup/sugar_box.dmd.yaml" --object_name sugar_box \
+--optitrack_object_id 3 --object_initial_positions '[1, 0, 0, 0, 0.5, 0.5, 0.025]' \
+--p_optitrackBody_plantBody_world '[-0.03427348, 0.01983565, -0.01967432]' \
+--R_optitrackBody_plantBody_world '[0.013, -0.035, 1.372]' --save_html
+```
+
+Note that data is only saved if the script is excited gracefully using the
+`Stop Simulation` button in Meshcat.
