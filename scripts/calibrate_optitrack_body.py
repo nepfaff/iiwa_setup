@@ -79,7 +79,7 @@ def main(
         object_initial_positions[-3] += 10.0
         plant.SetDefaultPositions(object_model_instance, object_initial_positions)
     else:
-        obpitrack_object_transform_updater: OptitrackObjectTransformUpdaterDiagram = (
+        optitrack_object_transform_updater: OptitrackObjectTransformUpdaterDiagram = (
             builder.AddNamedSystem(
                 "OptitrackTransformUpdater",
                 OptitrackObjectTransformUpdaterDiagram(
@@ -101,7 +101,7 @@ def main(
 
     body_pose_logger.set_plant_context(plant_context)
     if not is_init:
-        obpitrack_object_transform_updater.set_plant_context(plant_context)
+        optitrack_object_transform_updater.set_plant_context(plant_context)
 
     simulator = Simulator(diagram, context)
 

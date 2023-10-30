@@ -56,7 +56,7 @@ def main(
         body=object_body,
     )
 
-    obpitrack_object_transform_updater: OptitrackObjectTransformUpdaterDiagram = (
+    optitrack_object_transform_updater: OptitrackObjectTransformUpdaterDiagram = (
         builder.AddNamedSystem(
             "OptitrackTransformUpdater",
             OptitrackObjectTransformUpdaterDiagram(
@@ -73,7 +73,7 @@ def main(
     plant.mutable_gravity_field().set_gravity_vector(np.zeros(3))
 
     object_pose_logger = LogVectorOutput(
-        obpitrack_object_transform_updater.GetOutputPort("object_positions"),
+        optitrack_object_transform_updater.GetOutputPort("object_positions"),
         builder,
         1.0 / logging_frequency_hz,
     )
@@ -86,7 +86,7 @@ def main(
     context = diagram.CreateDefaultContext()
     plant_context = plant.GetMyContextFromRoot(context)
 
-    obpitrack_object_transform_updater.set_plant_context(plant_context)
+    optitrack_object_transform_updater.set_plant_context(plant_context)
 
     simulator = Simulator(diagram, context)
     simulator.set_target_realtime_rate(1.0)
