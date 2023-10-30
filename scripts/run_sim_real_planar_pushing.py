@@ -334,12 +334,18 @@ if __name__ == "__main__":
     if not os.path.exists(out_path):
         os.mkdir(out_path)
 
-    # TODO: The path should be passed as an argument
     poses = [
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.5, 0.0, 0.25]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.6, 0.0, 0.25]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.7, 0.0, 0.25]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.4, 0.0, 0.175]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.5, 0.0, 0.175]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.6, 0.0, 0.175]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.7, 0.0, 0.175]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.75, 0.0, 0.175]),
     ]
+
+    # Rotate the gripper by 90 degrees around yaw in the gripper frame
+    X_GG1 = RigidTransform(RollPitchYaw(0.0, 0.0, np.pi / 2.0), np.zeros(3))
+    poses = [pose @ X_GG1 for pose in poses]
+
     pushing_pose_traj = PiecewisePose.MakeLinear(
         times=np.arange(len(poses)),
         poses=poses,
