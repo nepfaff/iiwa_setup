@@ -33,6 +33,13 @@ Activate the environment:
 poetry shell
 ```
 
+Install `git lfs`:
+
+```bash
+git lfs install
+git lfs pull
+```
+
 ### iiwa Driver
 
 [Drake's iiwa driver](https://github.com/RobotLocomotion/drake-iiwa-driver) must be
