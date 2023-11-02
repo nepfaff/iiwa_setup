@@ -1,5 +1,5 @@
 # iiwa_setup
-iiwa real world setup
+iiwa real-world setup
 
 ## Installation
 
@@ -45,7 +45,7 @@ git lfs pull
 [Drake's iiwa driver](https://github.com/RobotLocomotion/drake-iiwa-driver) must be
 installed manually to use the real iiwa robot.
 
-The FRI source can be downloaded from[here](https://mitprod-my.sharepoint.com/:u:/g/personal/nepfaff_mit_edu/EdUdfStUexZKqlfwKLTKOyUBmpoI3H1ylzit-813TMV1Eg?e=HRWaIv) and installed using the
+The FRI source can be downloaded from [here](https://mitprod-my.sharepoint.com/:u:/g/personal/nepfaff_mit_edu/EdUdfStUexZKqlfwKLTKOyUBmpoI3H1ylzit-813TMV1Eg?e=HRWaIv) and installed using the
 following instructions:
 ```bash
 cd kuka-fri
@@ -77,7 +77,7 @@ To use the Optitrack system, run the Optitrack client from the
 bazel run //src:optitrack_client
 ```
 
-### Inspecting optitrack LCM messages
+### Inspecting Optitrack LCM messages
 
 Clone [drake](https://github.com/RobotLocomotion/drake) and run LCM Spy from inside the
 drake directory:
@@ -124,7 +124,7 @@ the body frame. The weld transform should include the printed z-position, no rot
 and planar positions that position the object close to the iiwa base inside the
 Optitrack workspace.
 
-#### 3. Determine the Optitrack body to plant body transform
+#### 3. Determine the Optitrack body to plant-body transform
 
 1. Place the real object at the planar position that corresponds to the weld from step 2.
 Taking the iiwa center as the world origin and using a ruler to measure positions and
