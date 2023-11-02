@@ -320,7 +320,7 @@ if __name__ == "__main__":
     scenario_str = f"""
     directives:
     - add_directives:
-        file: package://iiwa_setup/iiwa7_with_cylinder_pusher.dmd.yaml
+        file: package://iiwa_setup/iiwa7_with_planar_pusher.dmd.yaml
     plant_config:
         # Cannot use bigger timesteps on the real robot
         time_step: 0.001
