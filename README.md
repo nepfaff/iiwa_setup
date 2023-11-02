@@ -56,7 +56,7 @@ patch -p1 < ../fri_udp_connection_file_descriptor.diff
 ### Optitrack (Optional)
 
 [Drake's Optitrack driver](https://github.com/RobotLocomotion/optitrack-driver) must be
-installed manually to use the Optitrack functionality.
+installed manually to use the [Optitrack](https://optitrack.com/) functionality.
 
 Build and install the wheel as described
 [here](https://github.com/RobotLocomotion/optitrack-driver#to-build-a-wheel). Make sure
