@@ -95,11 +95,11 @@ class OpenLoopPlanarPushingPlanner(LeafSystem):
             wait_push_delay_s (float): The delay between moving to the
             `pushing_start_pose` and executing the `pushing_pose_trajectory`.
             move_to_start_velocity_limits (np.ndarray): The robot velocity limits
-            for moving to the starting position. Shape (N,7) where N are the number
-            of robot joints.
+            for moving to the starting position. Shape (N,num_joint_positions) where N
+            are the number of robot joints.
             move_to_start_acceleration_limits (np.ndarray): The robot acceleration
-            limits for moving to the starting position. Shape (N,7) where N are the
-            number of robot joints.
+            limits for moving to the starting position. Shape (N,num_joint_positions)
+            where N are the number of robot joints.
         """
         super().__init__()
 
@@ -404,11 +404,11 @@ class OpenLoopPlanarPushingController(Diagram):
             wait_push_delay_s (float): The delay between moving to the
             `pushing_start_pose` and executing the `pushing_pose_trajectory`.
             move_to_start_velocity_limits (np.ndarray): The robot velocity limits
-            for moving to the starting position. Shape (N,7) where N are the number
-            of robot joints.
+            for moving to the starting position. Shape (N,num_joint_positions) where N
+            are the number of robot joints.
             move_to_start_acceleration_limits (np.ndarray): The robot acceleration
-            limits for moving to the starting position. Shape (N,7) where N are the
-            number of robot joints.
+            limits for moving to the starting position. Shape (N,num_joint_positions)
+            where N are the number of robot joints.
         """
         super().__init__()
 
