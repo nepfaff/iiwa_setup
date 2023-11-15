@@ -225,6 +225,14 @@ class IiwaHardwareStationDiagram(Diagram):
             self._external_station.GetOutputPort("iiwa.velocity_estimated"),
             "iiwa.velocity_estimated",
         )
+        builder.ExportOutput(
+            self._external_station.GetOutputPort("iiwa.torque_measured"),
+            "iiwa.torque_measured",
+        )
+        builder.ExportOutput(
+            self._external_station.GetOutputPort("iiwa.torque_commanded"),
+            "iiwa.torque_commanded",
+        )
         # Export external state output
         iiwa_state_mux: Multiplexer = builder.AddSystem(Multiplexer([7, 7]))
         builder.Connect(
