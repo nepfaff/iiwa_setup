@@ -14,7 +14,7 @@ poetry env use python3.10
 
 Next, install all the required dependencies to the virtual environment with the
 following command:
-```
+```bash
 poetry install -vvv
 ```
 (the `-vvv` flag adds verbose output).
@@ -29,7 +29,7 @@ export PYTHONPATH=~/manipulation:${PYTHONPATH}
 ```
 
 Activate the environment:
-```
+```bash
 poetry shell
 ```
 
