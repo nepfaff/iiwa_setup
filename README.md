@@ -43,7 +43,7 @@ git lfs pull
 ### iiwa Driver
 
 [Drake's iiwa driver](https://github.com/RobotLocomotion/drake-iiwa-driver) must be
-installed manually to use the real iiwa robot.
+installed manually to use the real iiwa robot. NOTE that [Drake's pre-requisites](https://drake.mit.edu/from_source.html) must be installed before installing the driver.
 
 The FRI source can be downloaded from [here](https://mitprod-my.sharepoint.com/:u:/g/personal/nepfaff_mit_edu/EdUdfStUexZKqlfwKLTKOyUBmpoI3H1ylzit-813TMV1Eg?e=HRWaIv) and installed using the
 following instructions:
@@ -52,6 +52,8 @@ cd kuka-fri
 unzip /path/to/your/copy/of/FRI-Client-SDK_Cpp-1_7.zip
 patch -p1 < ../fri_udp_connection_file_descriptor.diff
 ```
+
+Once build, the driver can be run using `./bazel-bin/kuka-driver/kuka_driver`.
 
 ### Optitrack (Optional)
 
