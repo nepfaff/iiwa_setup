@@ -1,5 +1,14 @@
 directives:
 - add_model:
+    name: iiwa_base_metal_plate
+    file: package://iiwa_setup/iiwa_base_metal_plate.sdf
+- add_weld:
+    parent: world
+    child: iiwa_base_metal_plate::iiwa_base_metal_plate_base_link
+    X_PC:
+        translation: [-0.005, 0.0, 0.00635]
+
+- add_model:
     name: iiwa
     file: package://drake/manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf
     default_joint_positions:
@@ -13,6 +22,8 @@ directives:
 - add_weld:
     parent: world
     child: iiwa::iiwa_link_0
+    X_PC:
+        translation: [0.0, 0.0, 0.0127]
 
 - add_model:
     name: pusher
