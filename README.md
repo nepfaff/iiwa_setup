@@ -78,7 +78,19 @@ is in order if the popup says `BusType OptionNIC found`. If the popup says
 `C:\KUKA\Hardware\Manager\KUKAHardwareManager.exe -assign OptionNIC -os RTOS`. Unplug
 the monitor and restart the sunrise cabinet before re-checking the network with `nmap`.
 
-### Optitrack (Optional)
+### Schunk WSG 50 Gripper Driver (Optional)
+
+Connect the WSG gripper to the same switch that is connecting the local computer with
+the sunrise cabinet. Add the IP `192.168.1.200` with netmask `255.255.255.0` as an
+additional static IP to the network (the first IP should still be `192.170.10.200`).
+The WSG is connected properly if the `WSG 50 Control Panel` web interface can be
+accessed through http://192.168.1.20/.
+
+[Drake's Schunk driver](https://github.com/RobotLocomotion/drake-schunk-driver) must be
+installed manually to use the WSG programatically. Once build, the driver can be run
+using `bazel run //src:schunk_driver`.
+
+### Optitrack Driver (Optional)
 
 [Drake's Optitrack driver](https://github.com/RobotLocomotion/optitrack-driver) must be
 installed manually to use the [Optitrack](https://optitrack.com/) functionality.
@@ -92,7 +104,9 @@ to install the wheel from inside the poetry virtual environment.
 1. Start the torque or position driver on the teach pendant.
 2. Run the iiwa driver by running `bazel run //kuka-driver:kuka_driver` from
 `drake-iiwa-driver`.
-3. Run the desired script with the `--use_hardware` flag.
+3. If using the WSG, run the schunk driver using `bazel run //src:schunk_driver` from
+`drake-schunk-driver`.
+4. Run the desired script with the `--use_hardware` flag.
 
 ## Optitrack
 

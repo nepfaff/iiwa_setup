@@ -108,8 +108,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--has_wsg",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Whether the iiwa has a WSG gripper or not.",
     )
     args = parser.parse_args()
