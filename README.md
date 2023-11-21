@@ -43,17 +43,40 @@ git lfs pull
 ### iiwa Driver
 
 [Drake's iiwa driver](https://github.com/RobotLocomotion/drake-iiwa-driver) must be
-installed manually to use the real iiwa robot. NOTE that [Drake's pre-requisites](https://drake.mit.edu/from_source.html) must be installed before installing the driver.
+installed manually to use the real iiwa robot. NOTE that
+[Drake's pre-requisites](https://drake.mit.edu/from_source.html) must be installed
+before installing the driver.
 
-The FRI source can be downloaded from [here](https://mitprod-my.sharepoint.com/:u:/g/personal/nepfaff_mit_edu/EdUdfStUexZKqlfwKLTKOyUBmpoI3H1ylzit-813TMV1Eg?e=HRWaIv) and installed using the
-following instructions:
+The FRI source can be downloaded from
+[here](https://mitprod-my.sharepoint.com/:u:/g/personal/nepfaff_mit_edu/EdUdfStUexZKqlfwKLTKOyUBmpoI3H1ylzit-813TMV1Eg?e=HRWaIv)
+and installed using the following instructions:
 ```bash
 cd kuka-fri
 unzip /path/to/your/copy/of/FRI-Client-SDK_Cpp-1_7.zip
 patch -p1 < ../fri_udp_connection_file_descriptor.diff
 ```
 
-Once build, the driver can be run using `./bazel-bin/kuka-driver/kuka_driver`.
+Once build, the driver can be run using `./bazel-bin/kuka-driver/kuka_driver` or using
+`bazel run //kuka-driver:kuka_driver`.
+
+#### Networking troubleshooting
+
+If the driver doesn't connect to the kuka, check that the sunrise cabinet is reachable
+on the network using `nmap -sP 192.170.10.2/24`. Both the local computer and a second
+computer (the sunrise cabinet) should show up.
+
+If it doesn't show up, check the following:
+1. There must be an ethernet network connecting the local computer and the sunrise
+sunrise cabinet KONI port (ideally through a switch). This network must have the static
+IP `192.170.10.200` with netmask `255.255.255.0`.
+2. The sunrise cabinet KONI port must be owned by RTOS and not by Windows. Connect a
+monitor, mouse, and keyboard to the sunrise cabinet. Start the cabinet and login. Press
+`WIN+R` to open the command window. Type
+`C:\KUKA\Hardware\Manager\KUKAHardwareManager.exe -query OptionNIC -os RTOS`. Everything
+is in order if the popup says `BusType OptionNIC found`. If the popup says
+`BusTypeOptionNIC not present`, change the port ownership using
+`C:\KUKA\Hardware\Manager\KUKAHardwareManager.exe -assign OptionNIC -os RTOS`. Unplug
+the monitor and restart the sunrise cabinet before re-checking the network with `nmap`.
 
 ### Optitrack (Optional)
 
