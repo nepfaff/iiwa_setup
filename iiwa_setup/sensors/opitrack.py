@@ -1,7 +1,7 @@
 import logging
 
 from copy import copy
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -14,6 +14,7 @@ from pydrake.all import (
     DiagramBuilder,
     DrakeLcm,
     LcmInterfaceSystem,
+    LcmPublisherSystem,
     LcmSubscriberSystem,
     LeafSystem,
     ModelInstanceIndex,
@@ -26,6 +27,41 @@ from pydrake.all import (
 )
 
 from iiwa_setup.iiwa import IiwaHardwareStationDiagram
+
+
+class OptitrackFrameSource(LeafSystem):
+    def __init__(
+        self,
+        optitrack_frames: List[optitrack_frame_t],
+        optitrack_frame_times: List[float],
+    ):
+        """A system that publishes optitrack frames at the specified times.
+
+        Args:
+            optitrack_frames (List[optitrack_frame_t]): The frames to publish.
+            optitrack_frame_times (List[float]): The times at which to publish the
+            frames. Must be of the same length as `optitrack_frames`.
+        """
+        super().__init__()
+
+        if len(optitrack_frames) != len(optitrack_frame_times):
+            raise ValueError(
+                "The number of optitrack frames must be equal to the number of "
+                + "optitrack frame times."
+            )
+        self._optitrack_frames = optitrack_frames
+        self._optitrack_frame_times = np.asarray(optitrack_frame_times)
+
+        self._optitrack_frame_publisher = self.DeclareAbstractOutputPort(
+            "optitrack_frame",
+            lambda: AbstractValue.Make(optitrack_frame_t),
+            self._get_optitrack_frame,
+        )
+
+    def _get_optitrack_frame(self, context: Context, output: AbstractValue) -> None:
+        current_time = context.get_time()
+        frame_idx = np.argmin(np.abs(self._optitrack_frame_times - current_time))
+        output.set_value(self._optitrack_frames[frame_idx])
 
 
 class OptitrackObjectTransformUpdater(LeafSystem):
@@ -222,6 +258,10 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
         retain_roll: bool = False,
         retain_pitch: bool = False,
         X_world_iiwa: RigidTransform = RigidTransform.Identity(),
+        simulate: bool = False,
+        lcm_publish_frequency: Optional[float] = None,
+        optitrack_frames: Optional[List[optitrack_frame_t]] = None,
+        optitrack_frame_times: Optional[List[float]] = None,
     ):
         """
         Args:
@@ -242,6 +282,13 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
             retain_pitch (bool): Similar to `retain_z`.
             X_world_iiwa (RigidTransform): The pose of the iiwa base with respect ot the
             world frame.
+            simulate (bool): Whether to simulate optitrack messages.
+            lcm_publish_frequency (Optional[float]): The frequency at which to publish
+            simulated optitrack messages. Can be None if `simulate` is False.
+            optitrack_frames (Optional[List[optitrack_frame_t]]): The simulated
+            optitrack frames to publish. Can be None if `simulate` is False.
+            optitrack_frame_times (Optional[List[float]]): The times at which to publish
+            the simulated optitrack frames. Can be None if `simulate` is False.
         """
         super().__init__()
 
@@ -249,6 +296,45 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
 
         lcm = DrakeLcm()
         lcm_system = builder.AddSystem(LcmInterfaceSystem(lcm))
+        optitrack_frame_subscriber: LcmSubscriberSystem = builder.AddNamedSystem(
+            "OptitrackFrameSubscriber",
+            LcmSubscriberSystem.Make(
+                channel="OPTITRACK_FRAMES",
+                lcm_type=optitrack_frame_t,
+                lcm=lcm_system,
+                use_cpp_serializer=False,
+                wait_for_message_on_initialization_timeout=0 if simulate else 10,
+            ),
+        )
+
+        if simulate:
+            if lcm_publish_frequency is None:
+                raise ValueError(
+                    "The lcm_publish_frequency must be specified if simulate is True."
+                )
+            optitrack_frame_publisher: LcmPublisherSystem = builder.AddNamedSystem(
+                "OptitrackFramePublisher",
+                LcmPublisherSystem.Make(
+                    channel="OPTITRACK_FRAMES",
+                    lcm_type=optitrack_frame_t,
+                    lcm=lcm_system,
+                    use_cpp_serializer=False,
+                    publish_period=lcm_publish_frequency,
+                ),
+            )
+
+            optitrack_frame_source: OptitrackFrameSource = builder.AddNamedSystem(
+                "OptitrackFrameSource",
+                OptitrackFrameSource(
+                    optitrack_frames=optitrack_frames,
+                    optitrack_frame_times=optitrack_frame_times,
+                ),
+            )
+            builder.Connect(
+                optitrack_frame_source.get_output_port(),
+                optitrack_frame_publisher.get_input_port(),
+            )
+
         plant = station.get_plant()
         manipuland_instance = station.get_model_instance(object_name)
         self._optitrack_object_transform_updater: OptitrackObjectTransformUpdater = (
@@ -267,24 +353,13 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
                 ),
             )
         )
-        builder.ExportOutput(
-            self._optitrack_object_transform_updater.GetOutputPort("object_positions"),
-            "object_positions",
-        )
-
-        optitrack_frame_subscriber: LcmSubscriberSystem = builder.AddNamedSystem(
-            "OptitrackFrameSubscriber",
-            LcmSubscriberSystem.Make(
-                channel="OPTITRACK_FRAMES",
-                lcm_type=optitrack_frame_t,
-                lcm=lcm_system,
-                use_cpp_serializer=False,
-                wait_for_message_on_initialization_timeout=10,
-            ),
-        )
         builder.Connect(
             optitrack_frame_subscriber.get_output_port(),
             self._optitrack_object_transform_updater.get_input_port(),
+        )
+        builder.ExportOutput(
+            self._optitrack_object_transform_updater.GetOutputPort("object_positions"),
+            "object_positions",
         )
 
         builder.BuildInto(self)
