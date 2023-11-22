@@ -1,18 +1,21 @@
 """
 Script for comparing simulated and real planar pushing rollouts.
-The simulation is executed first and the exact same iiwa joint positions are then
-executed on the real hardware. Object poses are logged for both sim and real experiments.
+The real hardware is executed first and the exact same iiwa joint positions are then
+executed in simulation. Object poses are logged for both sim and real experiments.
+The optitrack object poses are simulated naively if `use_hardware` is False.
 """
 
 import argparse
+import json
 import logging
 import os
 
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 
 from manipulation.station import load_scenario
+from optitrack import optitrack_frame_t, optitrack_rigid_body_t
 from pydrake.all import (
     DiagramBuilder,
     LogVectorOutput,
@@ -21,6 +24,7 @@ from pydrake.all import (
     PiecewisePose,
     RigidTransform,
     RollPitchYaw,
+    RotationMatrix,
     Simulator,
     TrajectorySource,
 )
@@ -30,6 +34,7 @@ from iiwa_setup.controllers import (
     PlanAndMoveToPositionsUnconstrainedController,
 )
 from iiwa_setup.iiwa import IiwaHardwareStationDiagram
+from iiwa_setup.sensors import OptitrackObjectTransformUpdaterDiagram
 from iiwa_setup.util import NoDrakeDifferentialIKFilter
 
 
@@ -37,16 +42,24 @@ def move_real(
     scenario_str: str,
     use_hardware: bool,
     logging_path: str,
+    object_name: str,
+    optitrack_iiwa_id: int,
+    optitrack_body_id: int,
+    X_optitrackBody_plantBody_world: RigidTransform,
     save_html: bool,
     pushing_start_pose: RigidTransform,
     pushing_pose_trajectory: PiecewisePose,
     move_to_start_velocity_limits: np.ndarray,
     move_to_start_acceleration_limits: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+    lcm_publish_frequency: float,
+    optitrack_frames: List[optitrack_frame_t],
+    optitrack_frame_times: List[float],
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute and execute the open loop planar pushing trajectory on the real iiwa.
-    Returns the saved joint positions that were commanded to enable replaying the exact
-    trajectory.
+    Returns the saved joint positions and joint position times that were commanded to
+    enable replaying the exact trajectory. Also returns the initial object positions as
+    determined by optitrack.
     """
     builder = DiagramBuilder()
 
@@ -82,8 +95,30 @@ def move_real(
         station.GetInputPort("iiwa.position"),
     )
 
+    optitrack_object_transform_updater: OptitrackObjectTransformUpdaterDiagram = (
+        builder.AddNamedSystem(
+            "OptitrackTransformUpdater",
+            OptitrackObjectTransformUpdaterDiagram(
+                station=station,
+                object_name=object_name,
+                optitrack_iiwa_id=optitrack_iiwa_id,
+                optitrack_body_id=optitrack_body_id,
+                X_optitrackBody_plantBody_world=X_optitrackBody_plantBody_world,
+                simulate=not use_hardware,
+                lcm_publish_frequency=lcm_publish_frequency,
+                optitrack_frames=optitrack_frames,
+                optitrack_frame_times=optitrack_frame_times,
+            ),
+        )
+    )
+
     iiwa_position_logger = LogVectorOutput(
         station.GetOutputPort("iiwa.position_commanded"),
+        builder,
+        scenario.plant_config.time_step,
+    )
+    object_state_logger = LogVectorOutput(
+        station.GetOutputPort(f"{object_name}_state"),
         builder,
         scenario.plant_config.time_step,
     )
@@ -99,6 +134,14 @@ def move_real(
     context = simulator.get_context()
     controller.set_context(context)
 
+    plant = station.get_plant()
+    plant_context = plant.GetMyContextFromRoot(context)
+    optitrack_object_transform_updater.set_plant_context(plant_context)
+
+    # Ensure that the object pose is determined entirely through optitrack
+    station.exclude_object_from_collision(context=context, object_name=object_name)
+    station.disable_gravity()
+
     visualizer.StartRecording()
     while not controller.is_finished():
         simulator.AdvanceTo(context.get_time() + 0.1)
@@ -109,17 +152,25 @@ def move_real(
     iiwa_position_times = iiwa_position_logger.FindLog(
         context
     ).sample_times()  # Shape (t,)
+    object_states = (
+        object_state_logger.FindLog(context).data().T.copy()
+    )  # Shape (t, 14)
+    if not use_hardware:
+        # The first object state is not valid when simulating optitrack
+        object_states[0] = object_states[1]
     np.save(os.path.join(logging_path, "real_iiwa_positions.npy"), iiwa_positions)
     np.savetxt(
         os.path.join(logging_path, "real_iiwa_position_times.txt"), iiwa_position_times
     )
+    np.save(os.path.join(logging_path, "real_object_states.npy"), object_states)
 
     if save_html:
         html = station.internal_meshcat.StaticHtml()
         with open(os.path.join(logging_path, "real_meshcat.html"), "w") as f:
             f.write(html)
 
-    return iiwa_positions, iiwa_position_times
+    initial_object_positions = object_states[0, :7]
+    return iiwa_positions, iiwa_position_times, initial_object_positions
 
 
 def move_sim_to_start(
@@ -180,6 +231,8 @@ def move_sim(
     save_html: bool,
     iiwa_positions: np.ndarray,
     iiwa_position_times: np.ndarray,
+    object_name: str,
+    initial_object_positions: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Move the simulated iiwa according to the recorded joint positions."""
     builder = DiagramBuilder()
@@ -191,6 +244,10 @@ def move_sim(
             scenario=scenario, has_wsg=False, use_hardware=False
         ),
     )
+
+    plant = station.get_plant()
+    object_model_instance = plant.GetModelInstanceByName(object_name)
+    plant.SetDefaultPositions(object_model_instance, initial_object_positions)
 
     iiwa_position_source: TrajectorySource = builder.AddNamedSystem(
         "iiwa_position_source",
@@ -207,6 +264,11 @@ def move_sim(
 
     iiwa_position_logger = LogVectorOutput(
         station.GetOutputPort("iiwa.position_commanded"),
+        builder,
+        scenario.plant_config.time_step,
+    )
+    object_state_logger = LogVectorOutput(
+        station.GetOutputPort(f"{object_name}_state"),
         builder,
         scenario.plant_config.time_step,
     )
@@ -230,11 +292,13 @@ def move_sim(
     iiwa_position_times = iiwa_position_logger.FindLog(
         context
     ).sample_times()  # Shape (t,)
+    object_states = object_state_logger.FindLog(context).data().T  # Shape (t, 14)
     np.save(os.path.join(logging_path, "sim_iiwa_positions.npy"), iiwa_positions)
     np.savetxt(
         os.path.join(logging_path, "sim_iiwa_position_times.txt"),
         iiwa_position_times,
     )
+    np.save(os.path.join(logging_path, "sim_object_states.npy"), object_states)
 
     if save_html:
         html = station.internal_meshcat.StaticHtml()
@@ -248,21 +312,35 @@ def main(
     scenario_str: str,
     use_hardware: bool,
     logging_path: str,
+    object_name: str,
+    optitrack_iiwa_id: int,
+    optitrack_body_id: int,
+    X_optitrackBody_plantBody_world: RigidTransform,
     save_html: bool,
     pushing_start_pose: RigidTransform,
     pushing_pose_trajectory: PiecewisePose,
     move_to_start_velocity_limits: np.ndarray,
     move_to_start_acceleration_limits: np.ndarray,
+    lcm_publish_frequency: float,
+    optitrack_frames: List[optitrack_frame_t],
+    optitrack_frame_times: List[float],
 ) -> None:
-    real_iiwa_positions, real_iiwa_position_times = move_real(
+    real_iiwa_positions, real_iiwa_position_times, initial_object_positions = move_real(
         scenario_str=scenario_str,
         use_hardware=use_hardware,
         logging_path=logging_path,
+        object_name=object_name,
+        optitrack_iiwa_id=optitrack_iiwa_id,
+        optitrack_body_id=optitrack_body_id,
+        X_optitrackBody_plantBody_world=X_optitrackBody_plantBody_world,
         save_html=save_html,
         pushing_start_pose=pushing_start_pose,
         pushing_pose_trajectory=pushing_pose_trajectory,
         move_to_start_velocity_limits=move_to_start_velocity_limits,
         move_to_start_acceleration_limits=move_to_start_acceleration_limits,
+        lcm_publish_frequency=lcm_publish_frequency,
+        optitrack_frames=optitrack_frames,
+        optitrack_frame_times=optitrack_frame_times,
     )
 
     move_sim_to_start(
@@ -278,6 +356,8 @@ def main(
         save_html=save_html,
         iiwa_positions=real_iiwa_positions,
         iiwa_position_times=real_iiwa_position_times,
+        object_name=object_name,
+        initial_object_positions=initial_object_positions,
     )
 
     if np.allclose(real_iiwa_positions, sim_iiwa_positions):
@@ -289,15 +369,51 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--use_hardware",
-        action="store_true",
-        help="Whether to use real world hardware.",
-    )
-    parser.add_argument(
         "--out_path",
         type=str,
         required=True,
         help="The path to the directory to write the results to.",
+    )
+    parser.add_argument(
+        "--object_directive",
+        type=str,
+        required=True,
+        help="The package path of the direcetive that contains the object of interest.",
+    )
+    parser.add_argument(
+        "--object_name",
+        type=str,
+        required=True,
+        help="The name of the object. This must correspond to the name in "
+        + "`object_directive`.",
+    )
+    parser.add_argument(
+        "--optitrack_object_id",
+        type=int,
+        required=True,
+        help="The optitrack object ID.",
+    )
+    parser.add_argument(
+        "--optitrack_iiwa_id", type=int, default=4, help="The optitrack iiwa ID."
+    )
+    parser.add_argument(
+        "--p_optitrackBody_plantBody_world",
+        type=json.loads,
+        required=True,
+        help="The position component of X_optitrackBody_plantBody_world in form "
+        + "[x, y, z].",
+    )
+    parser.add_argument(
+        "--R_optitrackBody_plantBody_world",
+        type=json.loads,
+        required=True,
+        help="The rotation component of X_optitrackBody_plantBody_world in form "
+        + "[qw, qx, qy, qz].",
+    )
+    parser.add_argument(
+        "--use_hardware",
+        action="store_true",
+        help="Whether to use real world hardware.",
     )
     parser.add_argument(
         "--save_html",
@@ -317,13 +433,18 @@ if __name__ == "__main__":
     logging.basicConfig(level=args.log_level)
     logging.getLogger("drake").addFilter(NoDrakeDifferentialIKFilter())
 
+    # Cannot use bigger timesteps on the real robot
+    timestep = 0.001
     scenario_str = f"""
     directives:
     - add_directives:
         file: package://iiwa_setup/iiwa7_with_planar_pusher.dmd.yaml
+    - add_directives:
+        file: package://iiwa_setup/floor.dmd.yaml
+    - add_directives:
+        file: {args.object_directive}
     plant_config:
-        # Cannot use bigger timesteps on the real robot
-        time_step: 0.001
+        time_step: {timestep}
         contact_model: "hydroelastic"
         discrete_contact_solver: "sap"
     model_drivers:
@@ -351,13 +472,39 @@ if __name__ == "__main__":
         poses=poses,
     )
 
+    # Simulated optitrack frames for use if 'use_hardware' is False
+    object_body = optitrack_rigid_body_t()
+    object_body.id = args.optitrack_object_id
+    object_body.xyz = [0.5, 0.0, 0.15]
+    object_body.quat = [0.0, 0.0, 0.0, 1.0]
+    iiwa_body = optitrack_rigid_body_t()
+    iiwa_body.id = args.optitrack_iiwa_id
+    iiwa_body.xyz = [0.0, 0.0, 0.0]
+    iiwa_body.quat = [0.0, 0.0, 0.0, 1.0]
+    optitrack_rigid_bodies = [object_body, iiwa_body]
+    optitrack_frame = optitrack_frame_t()
+    optitrack_frame.num_rigid_bodies = len(optitrack_rigid_bodies)
+    optitrack_frame.rigid_bodies = optitrack_rigid_bodies
+    optitrack_frames = [optitrack_frame]
+    optitrack_frame_times = [0.0]
+
     main(
         scenario_str=scenario_str,
         use_hardware=args.use_hardware,
         logging_path=out_path,
+        object_name=args.object_name,
+        optitrack_body_id=args.optitrack_object_id,
+        optitrack_iiwa_id=args.optitrack_iiwa_id,
+        X_optitrackBody_plantBody_world=RigidTransform(
+            RotationMatrix(RollPitchYaw(args.R_optitrackBody_plantBody_world)),
+            args.p_optitrackBody_plantBody_world,
+        ),
         save_html=args.save_html,
         pushing_start_pose=poses[0],
         pushing_pose_trajectory=pushing_pose_traj,
         move_to_start_velocity_limits=0.1 * np.ones(7),
         move_to_start_acceleration_limits=0.1 * np.ones(7),
+        lcm_publish_frequency=timestep,
+        optitrack_frames=optitrack_frames,
+        optitrack_frame_times=optitrack_frame_times,
     )
