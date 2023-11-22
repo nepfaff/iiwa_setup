@@ -2,6 +2,8 @@ import os
 
 from typing import List, Tuple
 
+import numpy as np
+
 from manipulation.station import (
     ApplyCameraConfigSim,
     ApplyDriverConfigsSim,
@@ -12,9 +14,12 @@ from manipulation.station import (
 )
 from pydrake.all import (
     AddMultibodyPlant,
+    CollisionFilterDeclaration,
+    Context,
     Demultiplexer,
     Diagram,
     DiagramBuilder,
+    GeometrySet,
     Meshcat,
     ModelDirectives,
     ModelInstanceIndex,
@@ -149,6 +154,8 @@ class IiwaHardwareStationDiagram(Diagram):
 
         # Internal Station
         self.internal_meshcat = StartMeshcat()
+        self.internal_station_diagram: Diagram
+        self.internal_scene_graph: SceneGraph
         internal_station_diagram, self.internal_scene_graph = MakeHardwareStation(
             scenario=scenario,
             meshcat=self.internal_meshcat,
@@ -161,14 +168,20 @@ class IiwaHardwareStationDiagram(Diagram):
 
         # External Station
         self.external_meshcat = StartMeshcat()
-        self._external_station: Diagram = builder.AddNamedSystem(
+        self._external_station_diagram: Diagram
+        self._external_scene_graph: SceneGraph
+        (
+            self._external_station_diagram,
+            self._external_scene_graph,
+        ) = MakeHardwareStation(
+            scenario=scenario,
+            meshcat=self.external_meshcat,
+            hardware=use_hardware,
+            package_xmls=package_xmls,
+        )
+        self._external_station = builder.AddNamedSystem(
             "external_station",
-            MakeHardwareStation(
-                scenario=scenario,
-                meshcat=self.external_meshcat,
-                hardware=use_hardware,
-                package_xmls=package_xmls,
-            )[0],
+            self._external_station_diagram,
         )
 
         # Connect the output of external station to the input of internal station
@@ -255,6 +268,60 @@ class IiwaHardwareStationDiagram(Diagram):
             "iiwa.controller"
         ).get_multibody_plant_for_control()
 
-    def get_model_instance(self, model_name: str) -> ModelInstanceIndex:
+    def get_model_instance(self, name: str) -> ModelInstanceIndex:
         plant = self.get_plant()
-        return plant.GetModelInstanceByName(model_name)
+        return plant.GetModelInstanceByName(name)
+
+    def exclude_object_from_collision(self, context: Context, object_name: str) -> None:
+        """Excludes collisions between the object and everything else (uses a collision
+        filter).
+
+        Args:
+            context (Context): The diagram context.
+            object_name (str): The name of the object to exclude collisions for.
+        """
+        internal_plant = self.get_plant()
+        outer_plant: MultibodyPlant = self._external_station.GetSubsystemByName("plant")
+        internal_scene_graph_context: Context = (
+            self.internal_scene_graph.GetMyMutableContextFromRoot(context)
+        )
+        external_scene_graph_context: Context = (
+            self._external_scene_graph.GetMyMutableContextFromRoot(context)
+        )
+        for plant, scene_graph, scene_graph_context in [
+            (internal_plant, self.internal_scene_graph, internal_scene_graph_context),
+            (
+                outer_plant,
+                self._external_scene_graph,
+                external_scene_graph_context,
+            ),
+        ]:
+            # Get the collision geometries of all the bodies in the plant
+            geometry_set_all = GeometrySet()
+            for i in range(plant.num_model_instances()):
+                model_instance = ModelInstanceIndex(i)
+                body_indices = plant.GetBodyIndices(model_instance)
+                bodies = [plant.get_body(body_index) for body_index in body_indices]
+                geometry_ids = [
+                    plant.GetCollisionGeometriesForBody(body) for body in bodies
+                ]
+                for id in geometry_ids:
+                    geometry_set_all.Add(id)
+
+            # Get the collision geometries of the object
+            object_body = plant.GetBodyByName(object_name + "_base_link")
+            object_geometry_ids = plant.GetCollisionGeometriesForBody(object_body)
+
+            # Exclude collision between the object and everything else
+            object_exclude_declaration = CollisionFilterDeclaration().ExcludeBetween(
+                GeometrySet(object_geometry_ids), geometry_set_all
+            )
+            scene_graph.collision_filter_manager(scene_graph_context).Apply(
+                object_exclude_declaration
+            )
+
+    def disable_gravity(self) -> None:
+        self.get_plant().mutable_gravity_field().set_gravity_vector(np.zeros(3))
+        self._external_station.GetSubsystemByName(
+            "plant"
+        ).mutable_gravity_field().set_gravity_vector(np.zeros(3))
