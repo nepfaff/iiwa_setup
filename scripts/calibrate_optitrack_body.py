@@ -93,7 +93,7 @@ def main(
         )
 
         # Disable gravity to enable moving object around
-        plant.mutable_gravity_field().set_gravity_vector(np.zeros(3))
+        station.disable_gravity()
 
     diagram: Diagram = builder.Build()
     context = diagram.CreateDefaultContext()

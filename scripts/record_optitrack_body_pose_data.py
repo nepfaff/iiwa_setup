@@ -69,8 +69,9 @@ def main(
         )
     )
 
-    # Disable gravity so that the object pose is determined entirely through optitrack
-    plant.mutable_gravity_field().set_gravity_vector(np.zeros(3))
+    # Ensure that the object pose is determined entirely through optitrack
+    station.exclude_object_from_collision(context=context, object_name=object_name)
+    station.disable_gravity()
 
     object_pose_logger = LogVectorOutput(
         optitrack_object_transform_updater.GetOutputPort("object_positions"),
