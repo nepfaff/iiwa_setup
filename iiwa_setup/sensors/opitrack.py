@@ -1,3 +1,5 @@
+import logging
+
 from copy import copy
 from typing import List
 
@@ -115,9 +117,14 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         optitrack_rigid_bodies: List[
             optitrack_rigid_body_t
         ] = optitrack_frame.rigid_bodies
+        if len(optitrack_rigid_bodies) == 0:
+            logging.warning("Skipping object pose update as no optitrack bodies found.")
+            return
 
         optitrack_body_ids = [body.id for body in optitrack_rigid_bodies]
-        iiwa_base_body = optitrack_rigid_bodies[optitrack_body_ids.index(4)]
+        iiwa_base_body = optitrack_rigid_bodies[
+            optitrack_body_ids.index(self._optitrack_iiwa_id)
+        ]
         object_body = optitrack_rigid_bodies[
             optitrack_body_ids.index(self._optitrack_body_id)
         ]
@@ -125,9 +132,7 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         # NOTE: The 'origin' frame refers to the optitrack world frame while the 'world'
         # frame refers to the plant/ simulated world frame that is of actual interest
         X_origin_iiwa = RigidTransform(
-            OptitrackObjectTransformUpdater.get_quaternion_from_optitrack_rigid_body(
-                iiwa_base_body
-            ),
+            self.get_quaternion_from_optitrack_rigid_body(iiwa_base_body),
             iiwa_base_body.xyz,
         )
         X_iiwa_origin = X_origin_iiwa.inverse()
@@ -151,7 +156,7 @@ class OptitrackObjectTransformUpdater(LeafSystem):
         object_quaternion = copy(X_world_plantBody.rotation().ToQuaternion())
         object_translation = copy(X_world_plantBody.translation())
 
-        # Optionally only ubdate a subset of the positions
+        # Optionally only update a subset of the positions
         current_object_positions = self._plant.GetPositions(
             self._plant_context, self._object_instance_idx
         )
