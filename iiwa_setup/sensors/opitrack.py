@@ -259,7 +259,7 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
         retain_pitch: bool = False,
         X_world_iiwa: RigidTransform = RigidTransform.Identity(),
         simulate: bool = False,
-        lcm_publish_frequency: Optional[float] = None,
+        lcm_publish_period: Optional[float] = None,
         optitrack_frames: Optional[List[optitrack_frame_t]] = None,
         optitrack_frame_times: Optional[List[float]] = None,
     ):
@@ -283,7 +283,7 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
             X_world_iiwa (RigidTransform): The pose of the iiwa base with respect ot the
             world frame.
             simulate (bool): Whether to simulate optitrack messages.
-            lcm_publish_frequency (Optional[float]): The frequency at which to publish
+            lcm_publish_period (Optional[float]): The period at which to publish
             simulated optitrack messages. Can be None if `simulate` is False.
             optitrack_frames (Optional[List[optitrack_frame_t]]): The simulated
             optitrack frames to publish. Can be None if `simulate` is False.
@@ -308,7 +308,7 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
         )
 
         if simulate:
-            if lcm_publish_frequency is None:
+            if lcm_publish_period is None:
                 raise ValueError(
                     "The lcm_publish_frequency must be specified if simulate is True."
                 )
@@ -319,7 +319,7 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
                     lcm_type=optitrack_frame_t,
                     lcm=lcm_system,
                     use_cpp_serializer=False,
-                    publish_period=lcm_publish_frequency,
+                    publish_period=lcm_publish_period,
                 ),
             )
 
