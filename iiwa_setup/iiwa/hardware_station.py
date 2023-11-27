@@ -389,6 +389,9 @@ class IiwaHardwareStationDiagram(Diagram):
         use_hardware: bool,
     ):
         super().__init__()
+
+        self._use_hardware = use_hardware
+
         package_xmls = [
             os.path.join(os.path.dirname(__file__), "../../models/package.xml")
         ]
@@ -525,57 +528,63 @@ class IiwaHardwareStationDiagram(Diagram):
         return plant.GetModelInstanceByName(name)
 
     def exclude_object_from_collision(self, context: Context, object_name: str) -> None:
-        """Excludes collisions between the object and everything else (uses a collision
-        filter).
+        """
+        Excludes collisions between the object and everything else (uses a collision
+        filter) during simulation.
+        NOTE: Should only be used when the real world is simulated.
 
         Args:
             context (Context): The diagram context.
             object_name (str): The name of the object to exclude collisions for.
         """
-        internal_plant = self.get_internal_plant()
-        outer_plant: MultibodyPlant = self._external_station.GetSubsystemByName("plant")
-        internal_scene_graph_context: Context = (
-            self.internal_scene_graph.GetMyMutableContextFromRoot(context)
+        if self._use_hardware:
+            raise RuntimeError(
+                "This method should only be used when the real world is simulated!"
+            )
+
+        external_plant: MultibodyPlant = self._external_station.GetSubsystemByName(
+            "plant"
+        )
+
+        # Get the collision geometries of all the bodies in the plant
+        geometry_set_all = GeometrySet()
+        for i in range(external_plant.num_model_instances()):
+            model_instance = ModelInstanceIndex(i)
+            body_indices = external_plant.GetBodyIndices(model_instance)
+            bodies = [
+                external_plant.get_body(body_index) for body_index in body_indices
+            ]
+            geometry_ids = [
+                external_plant.GetCollisionGeometriesForBody(body) for body in bodies
+            ]
+            for id in geometry_ids:
+                geometry_set_all.Add(id)
+
+        # Get the collision geometries of the object
+        object_body = external_plant.GetBodyByName(object_name + "_base_link")
+        object_geometry_ids = external_plant.GetCollisionGeometriesForBody(object_body)
+
+        # Exclude collision between the object and everything else
+        object_exclude_declaration = CollisionFilterDeclaration().ExcludeBetween(
+            GeometrySet(object_geometry_ids), geometry_set_all
         )
         external_scene_graph_context: Context = (
             self._external_scene_graph.GetMyMutableContextFromRoot(context)
         )
-        for plant, scene_graph, scene_graph_context in [
-            (internal_plant, self.internal_scene_graph, internal_scene_graph_context),
-            (
-                outer_plant,
-                self._external_scene_graph,
-                external_scene_graph_context,
-            ),
-        ]:
-            # Get the collision geometries of all the bodies in the plant
-            geometry_set_all = GeometrySet()
-            for i in range(plant.num_model_instances()):
-                model_instance = ModelInstanceIndex(i)
-                body_indices = plant.GetBodyIndices(model_instance)
-                bodies = [plant.get_body(body_index) for body_index in body_indices]
-                geometry_ids = [
-                    plant.GetCollisionGeometriesForBody(body) for body in bodies
-                ]
-                for id in geometry_ids:
-                    geometry_set_all.Add(id)
-
-            # Get the collision geometries of the object
-            object_body = plant.GetBodyByName(object_name + "_base_link")
-            object_geometry_ids = plant.GetCollisionGeometriesForBody(object_body)
-
-            # Exclude collision between the object and everything else
-            object_exclude_declaration = CollisionFilterDeclaration().ExcludeBetween(
-                GeometrySet(object_geometry_ids), geometry_set_all
-            )
-            scene_graph.collision_filter_manager(scene_graph_context).Apply(
-                object_exclude_declaration
-            )
+        self._external_scene_graph.collision_filter_manager(
+            external_scene_graph_context
+        ).Apply(object_exclude_declaration)
 
     def disable_gravity(self) -> None:
-        self.get_internal_plant().mutable_gravity_field().set_gravity_vector(
-            np.zeros(3)
-        )
+        """
+        Disables gravity in the simulation.
+        NOTE: Should only be used when the real world is simulated.
+        """
+        if self._use_hardware:
+            raise RuntimeError(
+                "This method should only be used when the real world is simulated!"
+            )
+
         self._external_station.GetSubsystemByName(
             "plant"
         ).mutable_gravity_field().set_gravity_vector(np.zeros(3))
