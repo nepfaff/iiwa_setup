@@ -335,7 +335,7 @@ class OptitrackObjectTransformUpdaterDiagram(Diagram):
                 optitrack_frame_publisher.get_input_port(),
             )
 
-        plant = station.get_plant()
+        plant = station.get_internal_plant()
         manipuland_instance = station.get_model_instance(object_name)
         self._optitrack_object_transform_updater: OptitrackObjectTransformUpdater = (
             builder.AddNamedSystem(
