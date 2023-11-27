@@ -134,8 +134,7 @@ def move_real(
     context = simulator.get_context()
     controller.set_context(context)
 
-    plant = station.get_plant()
-    plant_context = plant.GetMyContextFromRoot(context)
+    plant_context = station.get_plant_context()
     optitrack_object_transform_updater.set_plant_context(plant_context)
 
     # Ensure that the object pose is determined entirely through optitrack

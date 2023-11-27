@@ -1,10 +1,13 @@
 import os
 
+from functools import partial
 from typing import List, Tuple
 
 import numpy as np
 
 from manipulation.station import (
+    AddIiwa,
+    AddWsg,
     ApplyCameraConfigSim,
     ApplyDriverConfigsSim,
     ApplyVisualizationConfig,
@@ -13,23 +16,266 @@ from manipulation.station import (
     Scenario,
 )
 from pydrake.all import (
+    AbstractValue,
     AddMultibodyPlant,
+    BasicVector,
     CollisionFilterDeclaration,
     Context,
     Demultiplexer,
     Diagram,
     DiagramBuilder,
     GeometrySet,
+    LeafSystem,
+    MatrixGain,
     Meshcat,
     ModelDirectives,
     ModelInstanceIndex,
     MultibodyPlant,
+    MultibodyPositionToGeometryPose,
     Multiplexer,
+    OutputPort,
     Parser,
     ProcessModelDirectives,
+    RigidTransform,
     SceneGraph,
     StartMeshcat,
+    State,
 )
+
+
+class PlantUpdater(LeafSystem):
+    """
+    Provides the API for updating and reading a plant context without simulating
+    the plant (adding it to the diagram).
+    """
+
+    def __init__(self, plant: MultibodyPlant, has_wsg: bool):
+        super().__init__()
+
+        self._plant = plant
+        self._has_wsg = has_wsg
+
+        self._plant_context = None
+        self._iiwa_model_instance_index = plant.GetModelInstanceByName("iiwa")
+        if self._has_wsg:
+            self._wsg_model_instance_index = plant.GetModelInstanceByName("wsg")
+
+        # Input ports
+        self._iiwa_position_input_port = self.DeclareVectorInputPort(
+            "iiwa.position",
+            self._plant.num_positions(self._iiwa_model_instance_index),
+        )
+        if self._has_wsg:
+            self._wsg_position_input_port = self.DeclareVectorInputPort(
+                "wsg.position",
+                self._plant.num_positions(self._wsg_model_instance_index),
+            )
+
+        # Output ports
+        self._position_output_port = self.DeclareVectorOutputPort(
+            "position", self._plant.num_positions(), self._get_position
+        )
+        self._state_output_port = self.DeclareVectorOutputPort(
+            "state",
+            self._plant.num_positions() + self._plant.num_velocities(),
+            self._get_state,
+        )
+        self._body_poses_output_port = self.DeclareAbstractOutputPort(
+            "body_poses",
+            lambda: AbstractValue.Make(
+                np.array([RigidTransform] * self._plant.num_bodies())
+            ),
+            self._get_body_poses,
+        )
+        for i in range(self._plant.num_model_instances()):
+            model_instance = ModelInstanceIndex(i)
+            model_instance_name = self._plant.GetModelInstanceName(model_instance)
+            self.DeclareVectorOutputPort(
+                f"{model_instance_name}_state",
+                self._plant.num_positions(model_instance)
+                + self._plant.num_velocities(model_instance),
+                partial(self._get_state, model_instance=model_instance),
+            )
+
+        self.DeclarePerStepUnrestrictedUpdateEvent(self._update_plant)
+
+    def _update_plant(self, context: Context, state: State) -> None:
+        if self._plant_context is None:
+            self._plant_context = self._plant.CreateDefaultContext()
+
+        # Update iiwa positions
+        self._plant.SetPositions(
+            self._plant_context,
+            self._iiwa_model_instance_index,
+            self._iiwa_position_input_port.Eval(context),
+        )
+
+        if self._has_wsg:
+            # Update wsg positions
+            self._plant.SetPositions(
+                self._plant_context,
+                self._wsg_model_instance_index,
+                self._wsg_position_input_port.Eval(context),
+            )
+
+    def _get_position(self, context: Context, output: BasicVector) -> None:
+        if self._plant_context is None:
+            self._plant_context = self._plant.CreateDefaultContext()
+
+        positions = self._plant.GetPositions(self._plant_context)
+        output.set_value(positions)
+
+    def get_position_output_port(self) -> OutputPort:
+        return self._position_output_port
+
+    def _get_state(
+        self,
+        context: Context,
+        output: BasicVector,
+        model_instance: ModelInstanceIndex = None,
+    ) -> None:
+        if self._plant_context is None:
+            self._plant_context = self._plant.CreateDefaultContext()
+
+        state = self._plant.GetPositionsAndVelocities(
+            self._plant_context, model_instance
+        )
+        output.set_value(state)
+
+    def get_state_output_port(
+        self, model_instance: ModelInstanceIndex = None
+    ) -> OutputPort:
+        if model_instance is None:
+            return self._state_output_port
+        model_instance_name = self._plant.GetModelInstanceName(model_instance)
+        return self.GetOutputPort(f"{model_instance_name}_state")
+
+    def _get_body_poses(self, context: Context, output: AbstractValue) -> None:
+        if self._plant_context is None:
+            self._plant_context = self._plant.CreateDefaultContext()
+
+        body_poses = []
+        for body_idx in self._plant.GetBodyIndices():
+            body = self._plant.get_body(body_idx)
+            pose = self._plant.CalcRelativeTransform(
+                context=self._plant_context,
+                frame_A=self._plant.world_frame(),
+                frame_B=body.body_frame(),
+            )
+            body_poses.append(pose)
+        output.set_value(np.array(body_poses))
+
+    def get_body_poses_output_port(self) -> OutputPort:
+        return self._body_poses_output_port
+
+    def get_plant_context(self) -> Context:
+        if self._plant_context is None:
+            self._plant_context = self._plant.CreateDefaultContext()
+        return self._plant_context
+
+
+class InternalStationDiagram(Diagram):
+    """
+    The "internal" station represents our knowledge of the real world and is not
+    simulated. It contains a plant which is updated using a plant updater system. The
+    plant itself is not part of the diagram while the updater system is.
+    """
+
+    def __init__(
+        self,
+        scenario: Scenario,
+        has_wsg: bool,
+        package_xmls: List[str] = [],
+    ):
+        super().__init__()
+
+        builder = DiagramBuilder()
+
+        # Create the multibody plant and scene graph
+        self._plant = MultibodyPlant(time_step=scenario.plant_config.time_step)
+        self._plant.set_name("internal_plant")
+        self._scene_graph = builder.AddNamedSystem("scene_graph", SceneGraph())
+        self._plant.RegisterAsSourceForSceneGraph(self._scene_graph)
+
+        parser = Parser(self._plant)
+        for p in package_xmls:
+            parser.package_map().AddPackageXml(p)
+        ConfigureParser(parser)
+
+        # Add model directives
+        _ = ProcessModelDirectives(
+            directives=ModelDirectives(directives=scenario.directives),
+            parser=parser,
+        )
+
+        self._plant.Finalize()
+
+        # Add system for updating the plant
+        self._plant_updater: PlantUpdater = builder.AddNamedSystem(
+            "plant_updater", PlantUpdater(plant=self._plant, has_wsg=has_wsg)
+        )
+
+        # Connect the plant to the scene graph
+        mbp_position_to_geometry_pose: MultibodyPositionToGeometryPose = (
+            builder.AddNamedSystem(
+                "mbp_position_to_geometry_pose",
+                MultibodyPositionToGeometryPose(self._plant),
+            )
+        )
+        builder.Connect(
+            self._plant_updater.get_position_output_port(),
+            mbp_position_to_geometry_pose.get_input_port(),
+        )
+        builder.Connect(
+            mbp_position_to_geometry_pose.get_output_port(),
+            self._scene_graph.get_source_pose_port(self._plant.get_source_id()),
+        )
+
+        # Make the plant for the iiwa controller
+        self._iiwa_controller_plant = MultibodyPlant(time_step=self._plant.time_step())
+        controller_iiwa = AddIiwa(self._iiwa_controller_plant)
+        if has_wsg:
+            AddWsg(self._iiwa_controller_plant, controller_iiwa, welded=True)
+        self._iiwa_controller_plant.Finalize()
+
+        # Export input ports
+        builder.ExportInput(
+            self._plant_updater.GetInputPort("iiwa.position"), "iiwa.position"
+        )
+        if has_wsg:
+            builder.ExportInput(
+                self._plant_updater.GetInputPort("wsg.position"), "wsg.position"
+            )
+
+        # Export "cheat" ports
+        builder.ExportOutput(self._scene_graph.get_query_output_port(), "query_object")
+        builder.ExportOutput(
+            self._plant_updater.get_state_output_port(), "plant_continuous_state"
+        )
+        builder.ExportOutput(
+            self._plant_updater.get_body_poses_output_port(), "body_poses"
+        )
+        for i in range(self._plant.num_model_instances()):
+            model_instance = ModelInstanceIndex(i)
+            model_instance_name = self._plant.GetModelInstanceName(model_instance)
+            builder.ExportOutput(
+                self._plant_updater.get_state_output_port(model_instance),
+                f"{model_instance_name}_state",
+            )
+
+        builder.BuildInto(self)
+
+    def get_plant(self) -> MultibodyPlant:
+        return self._plant
+
+    def get_plant_context(self) -> Context:
+        return self._plant_updater.get_plant_context()
+
+    def get_iiwa_controller_plant(self) -> MultibodyPlant:
+        return self._iiwa_controller_plant
+
+    def get_scene_graph(self) -> SceneGraph:
+        return self._scene_graph
 
 
 def MakeHardwareStation(
@@ -75,7 +321,7 @@ def MakeHardwareStation(
 
     builder = DiagramBuilder()
 
-    # Create the multibody plant and scene graph.
+    # Create the multibody plant and scene graph
     sim_plant: MultibodyPlant
     sim_plant, scene_graph = AddMultibodyPlant(
         config=scenario.plant_config, builder=builder
@@ -86,16 +332,16 @@ def MakeHardwareStation(
         parser.package_map().AddPackageXml(p)
     ConfigureParser(parser)
 
-    # Add model directives.
+    # Add model directives
     added_models = ProcessModelDirectives(
         directives=ModelDirectives(directives=scenario.directives),
         parser=parser,
     )
 
-    # Now the plant is complete.
+    # Now the plant is complete
     sim_plant.Finalize()
 
-    # Add drivers.
+    # Add drivers
     ApplyDriverConfigsSim(
         driver_configs=scenario.model_drivers,
         sim_plant=sim_plant,
@@ -103,14 +349,14 @@ def MakeHardwareStation(
         builder=builder,
     )
 
-    # Add scene cameras.
+    # Add scene cameras
     for _, camera in scenario.cameras.items():
         ApplyCameraConfigSim(config=camera, builder=builder)
 
-    # Add visualization.
+    # Add visualization
     ApplyVisualizationConfig(scenario.visualization, builder, meshcat=meshcat)
 
-    # Export "cheat" ports.
+    # Export "cheat" ports
     builder.ExportOutput(scene_graph.get_query_output_port(), "query_object")
     builder.ExportOutput(sim_plant.get_contact_results_output_port(), "contact_results")
     builder.ExportOutput(sim_plant.get_state_output_port(), "plant_continuous_state")
@@ -124,19 +370,16 @@ def MakeHardwareStation(
         )
 
     diagram = builder.Build()
-    diagram.set_name("station")
+    diagram.set_name("external_station")
 
     return diagram, scene_graph
 
 
 class IiwaHardwareStationDiagram(Diagram):
     """
-    Consists of an "internal" and and "external" hardware station. The "internal"
-    station mirrors the "external" station and is always simulated. One can think of
-    the "internal" station as the internal system model. The "external" station
-    represents the hardware or a simulated version of it. Having two stations is
-    important as only the "internal" station will contain a plant, etc. when the
-    "external" station represents hardware and thus only contains LCM logic.
+    Consists of an "internal" and and "external" hardware station. The "external"
+    station represents the real world or simulated version of it. The "internal" station
+    represents our knowledge of the real world and is not simulated.
     """
 
     def __init__(
@@ -154,17 +397,15 @@ class IiwaHardwareStationDiagram(Diagram):
 
         # Internal Station
         self.internal_meshcat = StartMeshcat()
-        self.internal_station_diagram: Diagram
-        self.internal_scene_graph: SceneGraph
-        internal_station_diagram, self.internal_scene_graph = MakeHardwareStation(
-            scenario=scenario,
-            meshcat=self.internal_meshcat,
-            hardware=False,
-            package_xmls=package_xmls,
+        self.internal_station: InternalStationDiagram = builder.AddNamedSystem(
+            "internal_station",
+            InternalStationDiagram(
+                scenario=scenario,
+                has_wsg=has_wsg,
+                package_xmls=package_xmls,
+            ),
         )
-        self.internal_station: Diagram = builder.AddNamedSystem(
-            "internal_station", internal_station_diagram
-        )
+        self.internal_scene_graph = self.internal_station.get_scene_graph()
 
         # External Station
         self.external_meshcat = StartMeshcat()
@@ -179,14 +420,16 @@ class IiwaHardwareStationDiagram(Diagram):
             hardware=use_hardware,
             package_xmls=package_xmls,
         )
-        self._external_station = builder.AddNamedSystem(
+        self._external_station: Diagram = builder.AddNamedSystem(
             "external_station",
             self._external_station_diagram,
         )
 
         # Connect the output of external station to the input of internal station
+        # NOTE: Measured and commanded positions can be quite different
         builder.Connect(
-            self._external_station.GetOutputPort("iiwa.position_commanded"),
+            # self._external_station.GetOutputPort("iiwa.position_commanded"),
+            self._external_station.GetOutputPort("iiwa.position_measured"),
             self.internal_station.GetInputPort("iiwa.position"),
         )
         if has_wsg:
@@ -195,8 +438,17 @@ class IiwaHardwareStationDiagram(Diagram):
                 self._external_station.GetOutputPort("wsg.state_measured"),
                 wsg_state_demux.get_input_port(),
             )
+            # System for converting the distance between the fingers to the positions of
+            # the two finger joints
+            wsg_state_to_wsg_mbp_state = builder.AddNamedSystem(
+                "wsg_state_to_wsg_mbp_state", MatrixGain(np.array([-0.5, 0.5]))
+            )
             builder.Connect(
                 wsg_state_demux.get_output_port(0),
+                wsg_state_to_wsg_mbp_state.get_input_port(),
+            )
+            builder.Connect(
+                wsg_state_to_wsg_mbp_state.get_output_port(),
                 self.internal_station.GetInputPort("wsg.position"),
             )
 
@@ -207,9 +459,7 @@ class IiwaHardwareStationDiagram(Diagram):
         builder.ExportOutput(
             self.internal_station.GetOutputPort("query_object"), "query_object"
         )
-        internal_plant: MultibodyPlant = self.internal_station.GetSubsystemByName(
-            "plant"
-        )
+        internal_plant = self.internal_station.get_plant()
         for i in range(internal_plant.num_model_instances()):
             model_instance = ModelInstanceIndex(i)
             model_instance_name = internal_plant.GetModelInstanceName(model_instance)
@@ -261,12 +511,13 @@ class IiwaHardwareStationDiagram(Diagram):
         builder.BuildInto(self)
 
     def get_plant(self) -> MultibodyPlant:
-        return self.internal_station.GetSubsystemByName("plant")
+        return self.internal_station.get_plant()
+
+    def get_plant_context(self) -> Context:
+        return self.internal_station.get_plant_context()
 
     def get_iiwa_controller_plant(self) -> MultibodyPlant:
-        return self.internal_station.GetSubsystemByName(
-            "iiwa.controller"
-        ).get_multibody_plant_for_control()
+        return self.internal_station.get_iiwa_controller_plant()
 
     def get_model_instance(self, name: str) -> ModelInstanceIndex:
         plant = self.get_plant()
