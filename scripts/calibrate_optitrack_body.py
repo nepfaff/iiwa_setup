@@ -12,6 +12,7 @@ from pydrake.all import (
     AddFrameTriadIllustration,
     Diagram,
     DiagramBuilder,
+    MultibodyPlant,
     RigidTransform,
     RollPitchYaw,
     RotationMatrix,
@@ -43,7 +44,13 @@ def main(
         ),
     )
 
-    plant = station.get_internal_plant()
+    # We need to use the simulated plant during initialization to determine the body's
+    # z-position using static stability
+    plant: MultibodyPlant = (
+        station._external_station.GetSubsystemByName("plant")
+        if is_init
+        else station.get_internal_plant()
+    )
 
     object_model_instance = plant.GetModelInstanceByName(object_name)
     object_body = plant.GetBodyByName(object_name + "_base_link", object_model_instance)
@@ -61,6 +68,7 @@ def main(
         body=ref_object_body,
     )
 
+    # Add logger for logging the body's pose
     body_pose_logger: BodyPoseLogger = builder.AddNamedSystem(
         "body_pose_logger",
         BodyPoseLogger(
@@ -91,9 +99,6 @@ def main(
                 ),
             )
         )
-
-        # Disable gravity to enable moving object around
-        station.disable_gravity()
 
     diagram: Diagram = builder.Build()
     context = diagram.CreateDefaultContext()

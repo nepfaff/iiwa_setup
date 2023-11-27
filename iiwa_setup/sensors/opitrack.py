@@ -239,8 +239,8 @@ class OptitrackObjectTransformUpdater(LeafSystem):
 
 class OptitrackObjectTransformUpdaterDiagram(Diagram):
     """
-    A diagram for updating the pose of `object_instance_idx` in the `plant` before
-    every trajectory-advancing step using the optitrack measurements.
+    A diagram for updating the pose of `object_instance_idx` in the internal `plant`
+    before every trajectory-advancing step using the optitrack measurements.
 
     NOTE: `set_plant_context` must be used to set the plant's context before the
     simulation is started. The plant context must be obtained from the context that

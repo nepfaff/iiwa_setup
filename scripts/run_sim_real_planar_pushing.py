@@ -137,10 +137,6 @@ def move_real(
     plant_context = station.get_internal_plant_context()
     optitrack_object_transform_updater.set_plant_context(plant_context)
 
-    # Ensure that the object pose is determined entirely through optitrack
-    station.exclude_object_from_collision(context=context, object_name=object_name)
-    station.disable_gravity()
-
     visualizer.StartRecording()
     while not controller.is_finished():
         simulator.AdvanceTo(context.get_time() + 0.1)

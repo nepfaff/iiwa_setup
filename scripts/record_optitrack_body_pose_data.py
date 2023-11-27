@@ -69,10 +69,6 @@ def main(
         )
     )
 
-    # Ensure that the object pose is determined entirely through optitrack
-    station.exclude_object_from_collision(context=context, object_name=object_name)
-    station.disable_gravity()
-
     object_pose_logger = LogVectorOutput(
         optitrack_object_transform_updater.GetOutputPort("object_positions"),
         builder,
