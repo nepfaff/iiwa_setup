@@ -76,7 +76,7 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
         teleop.get_output_port(), differential_ik.GetInputPort("X_WE_desired")
     )
     iiwa_forward_kinematics = builder.AddSystem(
-        IiwaForwardKinematics(station.get_plant())
+        IiwaForwardKinematics(station.get_internal_plant())
     )
     builder.Connect(
         station.GetOutputPort("iiwa.position_commanded"),

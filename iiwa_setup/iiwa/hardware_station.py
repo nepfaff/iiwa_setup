@@ -510,17 +510,18 @@ class IiwaHardwareStationDiagram(Diagram):
 
         builder.BuildInto(self)
 
-    def get_plant(self) -> MultibodyPlant:
+    def get_internal_plant(self) -> MultibodyPlant:
+        """Get the internal non-simulated plant."""
         return self.internal_station.get_plant()
 
-    def get_plant_context(self) -> Context:
+    def get_internal_plant_context(self) -> Context:
         return self.internal_station.get_plant_context()
 
     def get_iiwa_controller_plant(self) -> MultibodyPlant:
         return self.internal_station.get_iiwa_controller_plant()
 
     def get_model_instance(self, name: str) -> ModelInstanceIndex:
-        plant = self.get_plant()
+        plant = self.get_internal_plant()
         return plant.GetModelInstanceByName(name)
 
     def exclude_object_from_collision(self, context: Context, object_name: str) -> None:
@@ -531,7 +532,7 @@ class IiwaHardwareStationDiagram(Diagram):
             context (Context): The diagram context.
             object_name (str): The name of the object to exclude collisions for.
         """
-        internal_plant = self.get_plant()
+        internal_plant = self.get_internal_plant()
         outer_plant: MultibodyPlant = self._external_station.GetSubsystemByName("plant")
         internal_scene_graph_context: Context = (
             self.internal_scene_graph.GetMyMutableContextFromRoot(context)
@@ -572,7 +573,9 @@ class IiwaHardwareStationDiagram(Diagram):
             )
 
     def disable_gravity(self) -> None:
-        self.get_plant().mutable_gravity_field().set_gravity_vector(np.zeros(3))
+        self.get_internal_plant().mutable_gravity_field().set_gravity_vector(
+            np.zeros(3)
+        )
         self._external_station.GetSubsystemByName(
             "plant"
         ).mutable_gravity_field().set_gravity_vector(np.zeros(3))

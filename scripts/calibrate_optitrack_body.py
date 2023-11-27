@@ -43,7 +43,7 @@ def main(
         ),
     )
 
-    plant = station.get_plant()
+    plant = station.get_internal_plant()
 
     object_model_instance = plant.GetModelInstanceByName(object_name)
     object_body = plant.GetBodyByName(object_name + "_base_link", object_model_instance)

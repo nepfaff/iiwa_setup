@@ -45,7 +45,7 @@ def main(
         ),
     )
 
-    plant = station.get_plant()
+    plant = station.get_internal_plant()
 
     object_model_instance = plant.GetModelInstanceByName(object_name)
     plant.SetDefaultPositions(object_model_instance, object_initial_positions)
