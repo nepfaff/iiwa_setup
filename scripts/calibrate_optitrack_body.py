@@ -12,6 +12,8 @@ from pydrake.all import (
     AddFrameTriadIllustration,
     Diagram,
     DiagramBuilder,
+    MeshcatVisualizer,
+    MultibodyPlant,
     RigidTransform,
     RollPitchYaw,
     RotationMatrix,
@@ -43,24 +45,37 @@ def main(
         ),
     )
 
-    plant = station.get_plant()
+    # We need to use the simulated plant during initialization to determine the body's
+    # z-position using static stability
+    plant: MultibodyPlant = (
+        station._external_station.GetSubsystemByName("plant")
+        if is_init
+        else station.get_internal_plant()
+    )
 
     object_model_instance = plant.GetModelInstanceByName(object_name)
     object_body = plant.GetBodyByName(object_name + "_base_link", object_model_instance)
-    AddFrameTriadIllustration(
-        scene_graph=station.internal_scene_graph,
-        body=object_body,
-    )
     ref_object_model_instance = station.get_model_instance(ref_object_name)
     ref_object_body = plant.GetBodyByName(
         object_name + "_base_link",
         ref_object_model_instance,
     )
-    AddFrameTriadIllustration(
-        scene_graph=station.internal_scene_graph,
-        body=ref_object_body,
-    )
+    if not is_init:
+        AddFrameTriadIllustration(
+            scene_graph=station.internal_scene_graph,
+            body=object_body,
+        )
+        AddFrameTriadIllustration(
+            scene_graph=station.internal_scene_graph,
+            body=ref_object_body,
+        )
 
+        # Required for visualizing the internal station
+        _ = MeshcatVisualizer.AddToBuilder(
+            builder, station.GetOutputPort("query_object"), station.internal_meshcat
+        )
+
+    # Add logger for logging the body's pose
     body_pose_logger: BodyPoseLogger = builder.AddNamedSystem(
         "body_pose_logger",
         BodyPoseLogger(
@@ -92,12 +107,13 @@ def main(
             )
         )
 
-        # Disable gravity to enable moving object around
-        station.disable_gravity()
-
     diagram: Diagram = builder.Build()
     context = diagram.CreateDefaultContext()
-    plant_context = plant.GetMyContextFromRoot(context)
+    plant_context = (
+        plant.GetMyContextFromRoot(context)
+        if is_init
+        else station.get_internal_plant_context()
+    )
 
     body_pose_logger.set_plant_context(plant_context)
     if not is_init:

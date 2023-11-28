@@ -45,7 +45,7 @@ def main(
         ),
     )
 
-    plant = station.get_plant()
+    plant = station.get_internal_plant()
 
     object_model_instance = plant.GetModelInstanceByName(object_name)
     plant.SetDefaultPositions(object_model_instance, object_initial_positions)
@@ -68,10 +68,6 @@ def main(
             ),
         )
     )
-
-    # Ensure that the object pose is determined entirely through optitrack
-    station.exclude_object_from_collision(context=context, object_name=object_name)
-    station.disable_gravity()
 
     object_pose_logger = LogVectorOutput(
         optitrack_object_transform_updater.GetOutputPort("object_positions"),

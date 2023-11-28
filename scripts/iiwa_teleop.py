@@ -5,7 +5,7 @@ import numpy as np
 from manipulation.meshcat_utils import WsgButton
 from manipulation.scenarios import AddIiwaDifferentialIK
 from manipulation.station import load_scenario
-from pydrake.all import DiagramBuilder, MeshcatPoseSliders, Simulator
+from pydrake.all import DiagramBuilder, MeshcatPoseSliders, MeshcatVisualizer, Simulator
 
 from iiwa_setup.iiwa import IiwaForwardKinematics, IiwaHardwareStationDiagram
 
@@ -76,7 +76,7 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
         teleop.get_output_port(), differential_ik.GetInputPort("X_WE_desired")
     )
     iiwa_forward_kinematics = builder.AddSystem(
-        IiwaForwardKinematics(station.internal_station.GetSubsystemByName("plant"))
+        IiwaForwardKinematics(station.get_internal_plant())
     )
     builder.Connect(
         station.GetOutputPort("iiwa.position_commanded"),
@@ -88,6 +88,11 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
         builder.Connect(
             wsg_teleop.get_output_port(0), station.GetInputPort("wsg.position")
         )
+
+    # Required for visualizing the internal station
+    _ = MeshcatVisualizer.AddToBuilder(
+        builder, station.GetOutputPort("query_object"), station.internal_meshcat
+    )
 
     diagram = builder.Build()
     simulator = Simulator(diagram)

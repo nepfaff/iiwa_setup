@@ -51,7 +51,7 @@ def move_real(
     pushing_pose_trajectory: PiecewisePose,
     move_to_start_velocity_limits: np.ndarray,
     move_to_start_acceleration_limits: np.ndarray,
-    lcm_publish_frequency: float,
+    lcm_publish_period: float,
     optitrack_frames: List[optitrack_frame_t],
     optitrack_frame_times: List[float],
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -105,7 +105,7 @@ def move_real(
                 optitrack_body_id=optitrack_body_id,
                 X_optitrackBody_plantBody_world=X_optitrackBody_plantBody_world,
                 simulate=not use_hardware,
-                lcm_publish_frequency=lcm_publish_frequency,
+                lcm_publish_period=lcm_publish_period,
                 optitrack_frames=optitrack_frames,
                 optitrack_frame_times=optitrack_frame_times,
             ),
@@ -134,13 +134,8 @@ def move_real(
     context = simulator.get_context()
     controller.set_context(context)
 
-    plant = station.get_plant()
-    plant_context = plant.GetMyContextFromRoot(context)
+    plant_context = station.get_internal_plant_context()
     optitrack_object_transform_updater.set_plant_context(plant_context)
-
-    # Ensure that the object pose is determined entirely through optitrack
-    station.exclude_object_from_collision(context=context, object_name=object_name)
-    station.disable_gravity()
 
     visualizer.StartRecording()
     while not controller.is_finished():
@@ -245,7 +240,7 @@ def move_sim(
         ),
     )
 
-    plant = station.get_plant()
+    plant = station.get_internal_plant()
     object_model_instance = plant.GetModelInstanceByName(object_name)
     plant.SetDefaultPositions(object_model_instance, initial_object_positions)
 
@@ -321,7 +316,7 @@ def main(
     pushing_pose_trajectory: PiecewisePose,
     move_to_start_velocity_limits: np.ndarray,
     move_to_start_acceleration_limits: np.ndarray,
-    lcm_publish_frequency: float,
+    lcm_publish_period: float,
     optitrack_frames: List[optitrack_frame_t],
     optitrack_frame_times: List[float],
 ) -> None:
@@ -338,7 +333,7 @@ def main(
         pushing_pose_trajectory=pushing_pose_trajectory,
         move_to_start_velocity_limits=move_to_start_velocity_limits,
         move_to_start_acceleration_limits=move_to_start_acceleration_limits,
-        lcm_publish_frequency=lcm_publish_frequency,
+        lcm_publish_period=lcm_publish_period,
         optitrack_frames=optitrack_frames,
         optitrack_frame_times=optitrack_frame_times,
     )
@@ -504,7 +499,7 @@ if __name__ == "__main__":
         pushing_pose_trajectory=pushing_pose_traj,
         move_to_start_velocity_limits=0.1 * np.ones(7),
         move_to_start_acceleration_limits=0.1 * np.ones(7),
-        lcm_publish_frequency=timestep,
+        lcm_publish_period=timestep,
         optitrack_frames=optitrack_frames,
         optitrack_frame_times=optitrack_frame_times,
     )
