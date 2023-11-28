@@ -12,6 +12,7 @@ from pydrake.all import (
     AddFrameTriadIllustration,
     Diagram,
     DiagramBuilder,
+    MeshcatVisualizer,
     MultibodyPlant,
     RigidTransform,
     RollPitchYaw,
@@ -54,19 +55,25 @@ def main(
 
     object_model_instance = plant.GetModelInstanceByName(object_name)
     object_body = plant.GetBodyByName(object_name + "_base_link", object_model_instance)
-    AddFrameTriadIllustration(
-        scene_graph=station.internal_scene_graph,
-        body=object_body,
-    )
     ref_object_model_instance = station.get_model_instance(ref_object_name)
     ref_object_body = plant.GetBodyByName(
         object_name + "_base_link",
         ref_object_model_instance,
     )
-    AddFrameTriadIllustration(
-        scene_graph=station.internal_scene_graph,
-        body=ref_object_body,
-    )
+    if not is_init:
+        AddFrameTriadIllustration(
+            scene_graph=station.internal_scene_graph,
+            body=object_body,
+        )
+        AddFrameTriadIllustration(
+            scene_graph=station.internal_scene_graph,
+            body=ref_object_body,
+        )
+
+        # Required for visualizing the internal station
+        _ = MeshcatVisualizer.AddToBuilder(
+            builder, station.GetOutputPort("query_object"), station.internal_meshcat
+        )
 
     # Add logger for logging the body's pose
     body_pose_logger: BodyPoseLogger = builder.AddNamedSystem(
@@ -102,7 +109,11 @@ def main(
 
     diagram: Diagram = builder.Build()
     context = diagram.CreateDefaultContext()
-    plant_context = plant.GetMyContextFromRoot(context)
+    plant_context = (
+        plant.GetMyContextFromRoot(context)
+        if is_init
+        else station.get_internal_plant_context()
+    )
 
     body_pose_logger.set_plant_context(plant_context)
     if not is_init:
