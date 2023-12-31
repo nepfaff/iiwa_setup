@@ -1,1 +1,5 @@
-from .opitrack import OptitrackObjectTransformUpdaterDiagram
+from .opitrack import (
+    OptitrackFrameSource,
+    OptitrackObjectTransformUpdaterDiagram,
+    PosesToOptitrackFrameConverter,
+)

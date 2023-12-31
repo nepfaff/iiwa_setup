@@ -194,3 +194,22 @@ python scripts/record_optitrack_body_pose_data.py --out_path sugar_box_logs \
 
 Note that data is only saved if the script is excited gracefully using the
 `Stop Simulation` button in Meshcat.
+
+### Simulating Optitrack Measurements
+
+The script `scripts/simulate_optitrack.py` can be used to simulate Optitrack frame
+measurements. The script either loads Optitrack frames and their associated publish
+times from disk (arbitrary number of objects) or opens a GUI for interactively moving
+a single object.
+
+Example usage (disk):
+```bash
+python scripts/simulate_optitrack.py --optitrack_frames_path frames.npy \
+--optitrack_frame_times_path frame_times.npy
+```
+
+Example usage (GUI):
+```bash
+python scripts/simulate_optitrack.py --initial_object_position '[0.5, 0.0, 0.15]' \
+--initial_object_quaternion '[1.0, 0.0, 0.0, 0.0]' --optitrack_object_ids '[4, 3]'
+```

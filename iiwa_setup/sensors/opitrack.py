@@ -64,6 +64,58 @@ class OptitrackFrameSource(LeafSystem):
         output.set_value(self._optitrack_frames[frame_idx])
 
 
+class PosesToOptitrackFrameConverter(LeafSystem):
+    def __init__(self, optitrack_object_ids: List[int]):
+        """A system that takes in a pose and outputs an Optitrack frame.
+
+        Args:
+            optitrack_object_ids (List[int]): The optitrack frame ids. The order of the
+                ids must match the order of the poses.
+        """
+        super().__init__()
+
+        self._optitrack_object_id = optitrack_object_ids
+
+        self._pose_input_port = self.DeclareAbstractInputPort(
+            "poses", AbstractValue.Make(List[RigidTransform])
+        )
+        self._optitrack_frame_publisher = self.DeclareAbstractOutputPort(
+            "optitrack_frame",
+            lambda: AbstractValue.Make(optitrack_frame_t),
+            self._convert_poses_to_optitrack_frame,
+        )
+
+    def _convert_poses_to_optitrack_frame(
+        self, context: Context, output: AbstractValue
+    ) -> None:
+        # Read poses
+        poses: List[RigidTransform] = self._pose_input_port.Eval(context)
+        assert len(poses) == len(
+            self._optitrack_object_id
+        ), "The number of poses must be equal to the number of Optitrack rigid bodies."
+
+        # Construct optitrack frame
+        rigid_bodies = []
+        for pose, object_id in zip(poses, self._optitrack_object_id):
+            rigid_body = optitrack_rigid_body_t()
+            rigid_body.id = object_id
+            rigid_body.xyz = pose.translation().tolist()
+            # Convert quaternion from [w, x, y, z] to [x, y, z, w]
+            drake_quat = pose.rotation().ToQuaternion()
+            rigid_body.quat = [
+                drake_quat.x(),
+                drake_quat.y(),
+                drake_quat.z(),
+                drake_quat.w(),
+            ]
+            rigid_bodies.append(rigid_body)
+        frame = optitrack_frame_t()
+        frame.num_rigid_bodies = len(poses)
+        frame.rigid_bodies = rigid_bodies
+
+        output.set_value(frame)
+
+
 class OptitrackObjectTransformUpdater(LeafSystem):
     """
     A system that updates the pose of `object_instance_idx` in the `plant` before
