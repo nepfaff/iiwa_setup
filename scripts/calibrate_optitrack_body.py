@@ -102,7 +102,7 @@ def main(
                     object_name=object_name,
                     optitrack_iiwa_id=optitrack_iiwa_id,
                     optitrack_body_id=optitrack_body_id,
-                    X_optitrackBody_plantBody_world=X_optitrackBody_plantBody_world,
+                    X_optitrackBody_plantBody=X_optitrackBody_plantBody_world,
                 ),
             )
         )
@@ -150,16 +150,44 @@ if __name__ == "__main__":
         iiwa: !IiwaDriver {{}}
     """
 
-    is_init = True
+    is_init = False
 
     object_name = "sugar_box"
     ref_object_name = "sugar_box_reference"
     ref_object_initial_positions = np.array([1, 0, 0, 0, 0.3, 0, 0.025])
     optitrack_iiwa_id = 4
     optitrack_body_id = 3
-    R_OptitrackBody_SimBody_W = RotationMatrix(RollPitchYaw([0.0, 0.0, 0.0]))
-    p_OptitrackBody_SimBody_W = [0.0, 0.0, 0.0]
+    R_OptitrackBody_SimBody_W = RotationMatrix(
+        RollPitchYaw(
+            roll=0.010594753717127814,
+            pitch=-0.02756162997663155,
+            yaw=1.3776243699729986,
+        )
+    )
+    p_OptitrackBody_SimBody_W = [0.3 - 0.33508318, 0.02026808, -0.04334023]
 
+    X_W_pB = RigidTransform([0.3, 0, 0.019528])
+    X_W_oB = RigidTransform(
+        RollPitchYaw(
+            roll=0.004080882108122741,
+            pitch=0.02986071816336336,
+            yaw=-1.3744782758667333,
+        ),
+        [0.35311888, -0.11686806, 0.0395686],
+    )
+
+    X_oB_pB = X_W_oB.inverse() @ X_W_pB
+
+    # X_oB_pB = RigidTransform([0, 0, 0])
+
+    # X_oB_pB = RigidTransform(
+    #     RollPitchYaw(
+    #         roll=0.007060389830813807 - 0.03802256058702844,
+    #         pitch=-0.0328477011558972,
+    #         yaw=1.394924332224635,
+    #     ),
+    #     [0.3 - 0.35354316, 0.11913834, -0.03929574],
+    # )
     main(
         scenario_str=scenario_str,
         is_init=is_init,
@@ -168,7 +196,5 @@ if __name__ == "__main__":
         ref_object_initial_positions=ref_object_initial_positions,
         optitrack_iiwa_id=optitrack_iiwa_id,
         optitrack_body_id=optitrack_body_id,
-        X_optitrackBody_plantBody_world=RigidTransform(
-            R_OptitrackBody_SimBody_W, p_OptitrackBody_SimBody_W
-        ),
+        X_optitrackBody_plantBody_world=X_oB_pB,
     )
