@@ -33,7 +33,7 @@ def main(
     ref_object_initial_positions: np.ndarray,
     optitrack_iiwa_id: int,
     optitrack_body_id: int,
-    X_optitrackBody_plantBody_world: RigidTransform,
+    X_optitrackBody_plantBody: RigidTransform,
 ):
     builder = DiagramBuilder()
 
@@ -102,7 +102,7 @@ def main(
                     object_name=object_name,
                     optitrack_iiwa_id=optitrack_iiwa_id,
                     optitrack_body_id=optitrack_body_id,
-                    X_optitrackBody_plantBody_world=X_optitrackBody_plantBody_world,
+                    X_optitrackBody_plantBody=X_optitrackBody_plantBody,
                 ),
             )
         )
@@ -150,15 +150,31 @@ if __name__ == "__main__":
         iiwa: !IiwaDriver {{}}
     """
 
-    is_init = True
+    is_init = False
 
     object_name = "sugar_box"
     ref_object_name = "sugar_box_reference"
     ref_object_initial_positions = np.array([1, 0, 0, 0, 0.3, 0, 0.025])
     optitrack_iiwa_id = 4
     optitrack_body_id = 3
-    R_OptitrackBody_SimBody_W = RotationMatrix(RollPitchYaw([0.0, 0.0, 0.0]))
-    p_OptitrackBody_SimBody_W = [0.0, 0.0, 0.0]
+
+    # NOTE: This should match the weld in sugar_box_reference.dmd.yaml
+    X_W_pB = RigidTransform([0.3, 0, 0.019528])
+
+    # NOTE: Modify this during calibration step 3
+    X_W_oB = RigidTransform(
+        RollPitchYaw(
+            roll=0,
+            pitch=0,
+            yaw=0,
+        ),
+        [0, 0, 0],
+    )
+
+    X_oB_pB = X_W_oB.inverse() @ X_W_pB
+
+    # NOTE: Uncomment for calibration step 3
+    X_oB_pB = RigidTransform([0, 0, 0])
 
     main(
         scenario_str=scenario_str,
@@ -168,7 +184,5 @@ if __name__ == "__main__":
         ref_object_initial_positions=ref_object_initial_positions,
         optitrack_iiwa_id=optitrack_iiwa_id,
         optitrack_body_id=optitrack_body_id,
-        X_optitrackBody_plantBody_world=RigidTransform(
-            R_OptitrackBody_SimBody_W, p_OptitrackBody_SimBody_W
-        ),
+        X_optitrackBody_plantBody=X_oB_pB,
     )

@@ -136,6 +136,11 @@ the following procedure:
 
 #### 1. Setup
 
+Make sure that the optitrack iiwa frame is in the middle of the iiwa (in the middle of
+the 4 corner points of which 3 are optitrack markers). By default, the frame will be in
+the middle of the 3 optitrack markers, which is slightly different. It can be changed
+using the optitrack GUI.
+
 Modify the `scenario_str` to contain the body of interest (currently
 `sugar_box.dmd.yaml`) and a second (reference) version of that body (currently
 `sugar_box_reference.dmd.yaml`). Both should be identical apart from the model name and
@@ -151,7 +156,7 @@ Modify `optitrack_iiwa_id` and `optitrack_body_id` to match the body IDs of the
 Optitrack system. These can be identified as described
 [here](#inspecting-optitrack-lcm-messages).
 
-Set both `R_OptitrackBody_SimBody_W` and `p_OptitrackBody_SimBody_W` to `[0, 0, 0]`.
+Make sure that `X_oB_pB = RigidTransform([0, 0, 0])` is uncommented.
 
 #### 2. Determine the reference body's positions
 
@@ -171,12 +176,10 @@ ensuring axis-aligned rotations should be helpful strategies here.
 2. Remove the collision geometries from the body SDFormat file.
 3. Set `is_init = False` and run the script.
 4. Note down the printed transform and terminate the script.
-5. Subtract the printed transform from the reference object weld transform
-(element-wise subtraction of the positions and Euler angles) and use the result as
-`R_OptitrackBody_SimBody_W` and `p_OptitrackBody_SimBody_W`.
-6. Run the script and check if both bodies align. If they do, then
-`R_OptitrackBody_SimBody_W` and `p_OptitrackBody_SimBody_W` represent the desired
-transform.
+5. Set `X_W_oB` to the printed transform.
+6. Comment out `X_oB_pB = RigidTransform([0, 0, 0])`.
+7. Run the script and check if both bodies align. If they do, then `X_oB_pB` represents
+the desired transform.
 
 ### Recording Optitrack object pose data
 
