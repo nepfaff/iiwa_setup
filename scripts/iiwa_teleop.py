@@ -19,11 +19,15 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
     plant_config:
         time_step: 0.005
         contact_model: "hydroelastic"
-        discrete_contact_solver: "sap"
+        discrete_contact_approximation: "sap"
     model_drivers:
         iiwa: !IiwaDriver
+            lcm_bus: "default"
             hand_model_name: wsg
         wsg: !SchunkWsgDriver {}
+    lcm_buses:
+        default:
+            lcm_url: ""
     """
         if has_wsg
         else """
@@ -34,9 +38,13 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
         # For some reason, this requires a small timestep
         time_step: 0.0001
         contact_model: "hydroelastic"
-        discrete_contact_solver: "sap"
+        discrete_contact_approximation: "sap"
     model_drivers:
-        iiwa: !IiwaDriver {}
+        iiwa: !IiwaDriver
+            lcm_bus: "default"
+    lcm_buses:
+        default:
+            lcm_url: ""
     """
     )
 

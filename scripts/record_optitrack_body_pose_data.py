@@ -190,9 +190,13 @@ if __name__ == "__main__":
     plant_config:
         time_step: 0.001
         contact_model: "hydroelastic_with_fallback"
-        discrete_contact_solver: "sap"
+        discrete_contact_approximation: "sap"
     model_drivers:
-        iiwa: !IiwaDriver {{}}
+        iiwa: !IiwaDriver
+            lcm_bus: "default"
+    lcm_buses:
+        default:
+            lcm_url: ""
     """
 
     out_path = args.out_path

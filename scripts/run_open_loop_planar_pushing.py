@@ -124,17 +124,21 @@ if __name__ == "__main__":
         # Cannot use bigger timesteps on the real robot
         time_step: 0.001
         contact_model: "hydroelastic"
-        discrete_contact_solver: "sap"
+        discrete_contact_approximation: "sap"
     model_drivers:
-        iiwa: !IiwaDriver {{}}
+        iiwa: !IiwaDriver
+            lcm_bus: "default"
+    lcm_buses:
+        default:
+            lcm_url: ""
     """
 
     poses = [
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.4, 0.0, 0.175]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.5, 0.0, 0.175]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.6, 0.0, 0.175]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.7, 0.0, 0.175]),
-        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.75, 0.0, 0.175]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.4, 0.0, 0.4]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.5, 0.0, 0.4]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.6, 0.0, 0.4]),
+        RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.7, 0.0, 0.4]),
+        # RigidTransform(RollPitchYaw(np.pi, 0.0, -np.pi), [0.75, 0.0, 0.4]),
     ]
 
     # Rotate the gripper by 90 degrees around yaw in the gripper frame

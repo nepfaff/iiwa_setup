@@ -1,23 +1,19 @@
 import os
 
 from functools import partial
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 
 from manipulation.station import (
     AddIiwa,
     AddWsg,
-    ApplyCameraConfigSim,
-    ApplyDriverConfigsSim,
-    ApplyVisualizationConfig,
     ConfigureParser,
-    MakeHardwareStationInterface,
+    MakeHardwareStation,
     Scenario,
 )
 from pydrake.all import (
     AbstractValue,
-    AddMultibodyPlant,
     BasicVector,
     CollisionFilterDeclaration,
     Context,
@@ -27,7 +23,6 @@ from pydrake.all import (
     GeometrySet,
     LeafSystem,
     MatrixGain,
-    Meshcat,
     ModelDirectives,
     ModelInstanceIndex,
     MultibodyPlant,
@@ -278,103 +273,6 @@ class InternalStationDiagram(Diagram):
         return self._scene_graph
 
 
-def MakeHardwareStation(
-    scenario: Scenario,
-    meshcat: Meshcat = None,
-    *,
-    package_xmls: List[str] = [],
-    hardware: bool = False,
-) -> Tuple[Diagram, SceneGraph]:
-    """
-    NOTE: This is a modified version of `MakeHardwareStation` from
-    https://github.com/RussTedrake/manipulation.
-
-    If `hardware=False`, (the default) returns a HardwareStation diagram containing:
-      - A MultibodyPlant with populated via the directives in `scenario`.
-      - A SceneGraph
-      - The default Drake visualizers
-      - Any robot / sensors drivers specified in the YAML description.
-
-    If `hardware=True`, returns a HardwareStationInterface diagram containing the
-    network interfaces to communicate directly with the hardware drivers.
-
-    Args:
-        scenario: A Scenario structure, populated using the `load_scenario` method.
-        meshcat: If not None, then AddDefaultVisualization will be added to the
-        subdiagram using this meshcat instance.
-        package_xmls: A list of package.xml file paths that will be passed to the
-        parser, using Parser.AddPackageXml().
-
-    Returns:
-        A tuple of (hardware_station_diagram, scene_graph):
-        - hardware_station_diagram: The diagram representing the hardware station.
-        - scene_graph: The scene graph of the hardware station if `hardware=False`
-        and `None` if `hardware=True`.
-    """
-    if hardware:
-        return (
-            MakeHardwareStationInterface(
-                scenario=scenario, meshcat=meshcat, package_xmls=package_xmls
-            ),
-            None,
-        )
-
-    builder = DiagramBuilder()
-
-    # Create the multibody plant and scene graph
-    sim_plant: MultibodyPlant
-    sim_plant, scene_graph = AddMultibodyPlant(
-        config=scenario.plant_config, builder=builder
-    )
-
-    parser = Parser(sim_plant)
-    for p in package_xmls:
-        parser.package_map().AddPackageXml(p)
-    ConfigureParser(parser)
-
-    # Add model directives
-    added_models = ProcessModelDirectives(
-        directives=ModelDirectives(directives=scenario.directives),
-        parser=parser,
-    )
-
-    # Now the plant is complete
-    sim_plant.Finalize()
-
-    # Add drivers
-    ApplyDriverConfigsSim(
-        driver_configs=scenario.model_drivers,
-        sim_plant=sim_plant,
-        models_from_directives=added_models,
-        builder=builder,
-    )
-
-    # Add scene cameras
-    for _, camera in scenario.cameras.items():
-        ApplyCameraConfigSim(config=camera, builder=builder)
-
-    # Add visualization
-    ApplyVisualizationConfig(scenario.visualization, builder, meshcat=meshcat)
-
-    # Export "cheat" ports
-    builder.ExportOutput(scene_graph.get_query_output_port(), "query_object")
-    builder.ExportOutput(sim_plant.get_contact_results_output_port(), "contact_results")
-    builder.ExportOutput(sim_plant.get_state_output_port(), "plant_continuous_state")
-    builder.ExportOutput(sim_plant.get_body_poses_output_port(), "body_poses")
-    for i in range(sim_plant.num_model_instances()):
-        model_instance = ModelInstanceIndex(i)
-        model_instance_name = sim_plant.GetModelInstanceName(model_instance)
-        builder.ExportOutput(
-            sim_plant.get_state_output_port(model_instance),
-            f"{model_instance_name}_state",
-        )
-
-    diagram = builder.Build()
-    diagram.set_name("external_station")
-
-    return diagram, scene_graph
-
-
 class IiwaHardwareStationDiagram(Diagram):
     """
     Consists of an "internal" and and "external" hardware station. The "external"
@@ -414,14 +312,15 @@ class IiwaHardwareStationDiagram(Diagram):
         self.external_meshcat = StartMeshcat()
         self._external_station_diagram: Diagram
         self._external_scene_graph: SceneGraph
-        (
-            self._external_station_diagram,
-            self._external_scene_graph,
-        ) = MakeHardwareStation(
+        self._external_station_diagram = MakeHardwareStation(
             scenario=scenario,
             meshcat=self.external_meshcat,
             hardware=use_hardware,
             package_xmls=package_xmls,
+        )
+        self._external_station_diagram.set_name("external_station")
+        self._external_scene_graph = self._external_station_diagram.GetSubsystemByName(
+            "scene_graph"
         )
         self._external_station: Diagram = builder.AddNamedSystem(
             "external_station",
