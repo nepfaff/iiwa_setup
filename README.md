@@ -49,7 +49,7 @@ before installing the driver.
 
 The FRI source can be downloaded from
 [here](https://mitprod-my.sharepoint.com/:u:/g/personal/nepfaff_mit_edu/EdUdfStUexZKqlfwKLTKOyUBmpoI3H1ylzit-813TMV1Eg?e=HRWaIv)
-and installed using the following instructions:
+and installed using the following instructions (from the driver repo):
 ```bash
 cd kuka-fri
 unzip /path/to/your/copy/of/FRI-Client-SDK_Cpp-1_7.zip
@@ -78,6 +78,20 @@ is in order if the popup says `BusType OptionNIC found`. If the popup says
 `C:\KUKA\Hardware\Manager\KUKAHardwareManager.exe -assign OptionNIC -os RTOS`. Unplug
 the monitor and restart the sunrise cabinet before re-checking the network with `nmap`.
 
+#### Port troubleshooting
+
+Make sure that the sunrise cabinet port matches the kuka driver port. If not, then
+modify the kuka driver source code to change the port
+(`kuka-driver/kuka_driver.cc/kDefaultPort`). It is also possible to start the kuka
+driver with a specific port over the command line. However, it is easier to hardcode the
+port as the cabinet port won't change.
+
+#### Robot limit exceeded errors
+
+1. Enter the KRF mode
+2. Manually operate the robot out of the limits using the tablet
+3. Re-enter automatic mode
+
 ### Schunk WSG 50 Gripper Driver (Optional)
 
 Connect the WSG gripper to the same switch that is connecting the local computer with
@@ -89,6 +103,12 @@ accessed through http://192.168.1.20/.
 [Drake's Schunk driver](https://github.com/RobotLocomotion/drake-schunk-driver) must be
 installed manually to use the WSG programatically. Once build, the driver can be run
 using `bazel run //src:schunk_driver`.
+
+#### Networking troubeshooting
+
+Check that one host shows up when using `nmap -sP 192.168.1.201`. If not, then check
+that you followed the IP instructions and that the gripper's ethernet cable is plugged
+into the switch.
 
 ### Optitrack Driver (Optional)
 
