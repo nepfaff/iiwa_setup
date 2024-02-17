@@ -285,13 +285,15 @@ class IiwaHardwareStationDiagram(Diagram):
         scenario: Scenario,
         has_wsg: bool,
         use_hardware: bool,
+        package_xmls: List[str] = [],
     ):
         super().__init__()
 
         self._use_hardware = use_hardware
 
         package_xmls = [
-            os.path.join(os.path.dirname(__file__), "../../models/package.xml")
+            os.path.join(os.path.dirname(__file__), "../../models/package.xml"),
+            *package_xmls,
         ]
 
         builder = DiagramBuilder()
