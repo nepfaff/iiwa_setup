@@ -291,10 +291,11 @@ class IiwaHardwareStationDiagram(Diagram):
 
         self._use_hardware = use_hardware
 
-        package_xmls = [
-            os.path.join(os.path.dirname(__file__), "../../models/package.xml"),
-            *package_xmls,
-        ]
+        iiwa_setup_models_package = os.path.join(
+            os.path.dirname(__file__), "../../models/package.xml"
+        )
+        if os.path.exists(iiwa_setup_models_package):
+            package_xmls.append(iiwa_setup_models_package)
 
         builder = DiagramBuilder()
 
