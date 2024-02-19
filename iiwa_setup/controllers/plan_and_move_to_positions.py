@@ -39,7 +39,7 @@ class PlanAndMoveToPositionsUnconstrainedController(LeafSystem):
         self._goal_positions = goal_positions
         self._velocity_limits = velocity_limits
         self._acceleration_limits = acceleration_limits
-        self._position_trajectory: Union(Trajectory, None) = None
+        self._position_trajectory: Union[Trajectory, None] = None
         self._is_finished = False
 
         num_positions = len(goal_positions)
