@@ -107,9 +107,16 @@ using `bazel run //src:schunk_driver`.
 
 #### Networking troubeshooting
 
-Check that one host shows up when using `nmap -sP 192.168.1.201`. If not, then check
-that you followed the IP instructions and that the gripper's ethernet cable is plugged
-into the switch.
+Check that one host shows up when using `nmap -sP 192.168.1.201`. and that the website
+is accessible at http://192.168.1.20/. If not, then check that you followed the IP
+instructions and that the gripper's ethernet cable is plugged into the switch.
+
+#### Error while moving: The device is not initialized
+
+1. Navigate to the website http://192.168.1.20/
+2. Motion -> Manual Control
+3. Click on `Home` and wait until the homing sequence is finished
+4. Re-try commanding the gripper via the web interface
 
 ### Optitrack Driver (Optional)
 
