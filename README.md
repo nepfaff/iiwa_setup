@@ -98,7 +98,8 @@ Connect the WSG gripper to the same switch that is connecting the local computer
 the sunrise cabinet. Add the IP `192.168.1.200` with netmask `255.255.255.0` as an
 additional static IP to the network (the first IP should still be `192.170.10.200`).
 The WSG is connected properly if the `WSG 50 Control Panel` web interface can be
-accessed through http://192.168.1.20/.
+accessed through http://192.168.1.20/. Try to control the gripper through the web
+interface. If this doesn't work, then controlling it through the driver also won't work.
 
 [Drake's Schunk driver](https://github.com/RobotLocomotion/drake-schunk-driver) must be
 installed manually to use the WSG programatically. Once build, the driver can be run
