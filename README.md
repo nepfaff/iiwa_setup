@@ -118,6 +118,11 @@ instructions and that the gripper's ethernet cable is plugged into the switch.
 3. Click on `Home` and wait until the homing sequence is finished
 4. Re-try commanding the gripper via the web interface
 
+#### Getting system info failed
+
+Follow the [wsg driver setup instructions](https://github.com/RobotLocomotion/drake-schunk-driver?tab=readme-ov-file#configuring-the-gripper).
+In particular, the gripper might be set to ICP instead of UDP.
+
 ### Optitrack Driver (Optional)
 
 [Drake's Optitrack driver](https://github.com/RobotLocomotion/optitrack-driver) must be
