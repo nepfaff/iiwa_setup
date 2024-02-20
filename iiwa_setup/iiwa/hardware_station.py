@@ -377,6 +377,10 @@ class IiwaHardwareStationDiagram(Diagram):
         builder.ExportInput(
             self._external_station.GetInputPort("iiwa.position"), "iiwa.position"
         )
+        builder.ExportInput(
+            self._external_station.GetInputPort("iiwa.feedforward_torque"),
+            "iiwa.feedforward_torque",
+        )
         if has_wsg:
             builder.ExportInput(
                 self._external_station.GetInputPort("wsg.position"), "wsg.position"
