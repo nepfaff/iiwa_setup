@@ -286,6 +286,7 @@ class IiwaHardwareStationDiagram(Diagram):
         scenario: Scenario,
         has_wsg: bool,
         use_hardware: bool,
+        control_mode: str = "position_and_torque",
         create_point_clouds: bool = False,
         package_xmls: List[str] = [],
     ):
@@ -296,6 +297,8 @@ class IiwaHardwareStationDiagram(Diagram):
                 part of the scenario. If false, then the iiwa controller plant will not
                 have a WSG gripper (tracking is less accurate if there is a mismatch).
             use_hardware (bool): Whether to use real world hardware.
+            control_mode (str, optional): The control mode to use. Must be one of
+                "position_and_torque", "position_only", or "torque_only".
             create_point_clouds (bool, optional): Whether to create point clouds from
                 the camera images. Defaults to False. Setting this to True might add
                 computational overhead.
@@ -387,9 +390,10 @@ class IiwaHardwareStationDiagram(Diagram):
             )
 
         # Export external station ports
-        builder.ExportInput(
-            self._external_station.GetInputPort("iiwa.position"), "iiwa.position"
-        )
+        if control_mode != "torque_only":
+            builder.ExportInput(
+                self._external_station.GetInputPort("iiwa.position"), "iiwa.position"
+            )
         builder.ExportInput(
             self._external_station.GetInputPort("iiwa.feedforward_torque"),
             "iiwa.feedforward_torque",
