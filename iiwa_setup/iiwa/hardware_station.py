@@ -7,6 +7,7 @@ import numpy as np
 
 from manipulation.station import (
     AddIiwa,
+    AddPointClouds,
     AddWsg,
     ConfigureParser,
     MakeHardwareStation,
@@ -285,8 +286,20 @@ class IiwaHardwareStationDiagram(Diagram):
         scenario: Scenario,
         has_wsg: bool,
         use_hardware: bool,
+        create_point_clouds: bool = False,
         package_xmls: List[str] = [],
     ):
+        """
+        Args:
+            scenario (Scenario): The scenario to use. This must contain an iiwa.
+            has_wsg (bool): Whether the station has a WSG gripper. This gripper must be
+                part of the scenario. If false, then the iiwa controller plant will not
+                have a WSG gripper (tracking is less accurate if there is a mismatch).
+            use_hardware (bool): Whether to use real world hardware.
+            create_point_clouds (bool, optional): Whether to create point clouds from
+                the camera images. Defaults to False. Setting this to True might add
+                computational overhead.
+        """
         super().__init__()
 
         self._use_hardware = use_hardware
@@ -405,6 +418,41 @@ class IiwaHardwareStationDiagram(Diagram):
             self._external_station.GetOutputPort("iiwa.torque_commanded"),
             "iiwa.torque_commanded",
         )
+        if (
+            len(scenario.cameras.items()) > 0
+            and create_point_clouds
+            and not use_hardware
+        ):
+            # TODO: Remove plant dependency from AddPointClouds to allow using it with
+            # hardware
+            depth_img_to_pcd_systems = AddPointClouds(
+                scenario=scenario,
+                station=self._external_station,
+                builder=builder,
+                meshcat=self.external_meshcat,
+            )
+        else:
+            depth_img_to_pcd_systems = None
+        for _, camera_config in scenario.cameras.items():
+            name = camera_config.name
+            builder.ExportOutput(
+                self._external_station.GetOutputPort(f"{name}.rgb_image"),
+                f"{name}.rgb_image",
+            )
+            builder.ExportOutput(
+                self._external_station.GetOutputPort(f"{name}.depth_image"),
+                f"{name}.depth_image",
+            )
+            builder.ExportOutput(
+                self._external_station.GetOutputPort(f"{name}.label_image"),
+                f"{name}.label_image",
+            )
+            if depth_img_to_pcd_systems is not None:
+                builder.ExportOutput(
+                    depth_img_to_pcd_systems[name].point_cloud_output_port(),
+                    f"{name}.point_cloud",
+                )
+
         # Export external state output
         iiwa_state_mux: Multiplexer = builder.AddSystem(Multiplexer([7, 7]))
         builder.Connect(
