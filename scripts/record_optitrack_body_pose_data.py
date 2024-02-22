@@ -10,6 +10,7 @@ import numpy as np
 from manipulation.station import load_scenario
 from pydrake.all import (
     AddFrameTriadIllustration,
+    ApplySimulatorConfig,
     Diagram,
     DiagramBuilder,
     LogVectorOutput,
@@ -86,6 +87,7 @@ def main(
     optitrack_object_transform_updater.set_plant_context(plant_context)
 
     simulator = Simulator(diagram, context)
+    ApplySimulatorConfig(scenario.simulator_config, simulator)
     simulator.set_target_realtime_rate(1.0)
 
     station.internal_meshcat.AddButton("Stop Simulation")

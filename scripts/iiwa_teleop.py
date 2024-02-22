@@ -5,7 +5,13 @@ import numpy as np
 from manipulation.meshcat_utils import WsgButton
 from manipulation.scenarios import AddIiwaDifferentialIK
 from manipulation.station import load_scenario
-from pydrake.all import DiagramBuilder, MeshcatPoseSliders, MeshcatVisualizer, Simulator
+from pydrake.all import (
+    ApplySimulatorConfig,
+    DiagramBuilder,
+    MeshcatPoseSliders,
+    MeshcatVisualizer,
+    Simulator,
+)
 
 from iiwa_setup.iiwa import IiwaForwardKinematics, IiwaHardwareStationDiagram
 
@@ -104,6 +110,7 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
+    ApplySimulatorConfig(scenario.simulator_config, simulator)
     simulator.set_target_realtime_rate(1.0)
 
     station.internal_meshcat.AddButton("Stop Simulation")

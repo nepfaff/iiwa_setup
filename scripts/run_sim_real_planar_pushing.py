@@ -17,6 +17,7 @@ import numpy as np
 from manipulation.station import load_scenario
 from optitrack import optitrack_frame_t, optitrack_rigid_body_t
 from pydrake.all import (
+    ApplySimulatorConfig,
     DiagramBuilder,
     LogVectorOutput,
     MeshcatVisualizer,
@@ -186,7 +187,9 @@ def move_sim_to_start(
     )
 
     controller_plant = station.get_iiwa_controller_plant()
-    plan_and_move_to_positions_controller: PlanAndMoveToPositionsUnconstrainedController = builder.AddNamedSystem(
+    plan_and_move_to_positions_controller: (
+        PlanAndMoveToPositionsUnconstrainedController
+    ) = builder.AddNamedSystem(
         "plan_and_move_to_positions_controller",
         PlanAndMoveToPositionsUnconstrainedController(
             controller_plant=controller_plant,
@@ -274,6 +277,7 @@ def move_sim(
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
+    ApplySimulatorConfig(scenario.simulator_config, simulator)
     simulator.set_target_realtime_rate(1.0)
 
     context = simulator.get_context()

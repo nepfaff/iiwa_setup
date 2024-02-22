@@ -10,7 +10,13 @@ import numpy as np
 
 from manipulation.station import LoadScenario
 from matplotlib import pyplot as plt
-from pydrake.all import Context, DiagramBuilder, PointCloud, Simulator
+from pydrake.all import (
+    ApplySimulatorConfig,
+    Context,
+    DiagramBuilder,
+    PointCloud,
+    Simulator,
+)
 
 from iiwa_setup.iiwa import IiwaHardwareStationDiagram
 
@@ -40,7 +46,7 @@ def main(scenario_str: str, use_hardware: bool) -> None:
     diagram = builder.Build()
 
     simulator = Simulator(diagram)
-    # simulator.set_target_realtime_rate(1.0)
+    ApplySimulatorConfig(scenario.simulator_config, simulator)
     context = simulator.get_context()
 
     # Initialize image plots

@@ -5,6 +5,7 @@ import numpy as np
 
 from manipulation.station import load_scenario
 from pydrake.all import (
+    ApplySimulatorConfig,
     DiagramBuilder,
     MeshcatVisualizer,
     PiecewisePose,
@@ -67,6 +68,7 @@ def main(
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
+    ApplySimulatorConfig(scenario.simulator_config, simulator)
     simulator.set_target_realtime_rate(1.0)
 
     context = simulator.get_context()
