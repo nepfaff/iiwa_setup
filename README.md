@@ -92,6 +92,10 @@ port as the cabinet port won't change.
 2. Manually operate the robot out of the limits using the tablet
 3. Re-enter automatic mode
 
+#### "Voltage of intermediate circuit too low" error
+
+One of the fuses is blown. You need to open the control box and replace them.
+
 ### Schunk WSG 50 Gripper Driver (Optional)
 
 Connect the WSG gripper to the same switch that is connecting the local computer with
