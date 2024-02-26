@@ -138,12 +138,31 @@ to install the wheel from inside the poetry virtual environment.
 
 ## Executing code on the real robot
 
-1. Start the torque or position driver on the teach pendant.
+1. Start the `DrakeFRIPositionDriver` or `DrakeDRITorqueDriver` on the teach pendant.
 2. Run the iiwa driver by running `bazel run //kuka-driver:kuka_driver` from
 `drake-iiwa-driver`.
 3. If using the WSG, run the schunk driver using `bazel run //src:schunk_driver` from
 `drake-schunk-driver`.
 4. Run the desired script with the `--use_hardware` flag.
+
+### Controlling the robot in `torque_only` mode
+
+1. Start the `DrakeFRITorqueOnlyDriver` on the teach pendant.
+2. Optional: Make sure that the iiwa driver is build by running `bazel build //...` from
+`drake-iiwa-driver`.
+3. Run the iiwa driver by running
+`./bazel-bin/kuka-driver/kuka_driver --torque_only=true --time_step 0.001` from
+`drake-iiwa-driver`.
+4. Run the desired script with the `--use_hardware` flag.
+
+#### Obtaining slightly better performance
+
+You might be able to achieve slightly better performance in `torque_only` mode by
+pinning the processes to the same core and increasing their priority.
+
+1. Make sure that you can run `chrt` without sudo privileges:
+`sudo setcap cap_sys_nice=eip /usr/bin/chrt`. This is only required once.
+2. Run the desired script using `taskset -c 1,29 chrt -r 20 python {...} --use_hardware`.
 
 ## Optitrack
 
