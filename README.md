@@ -96,6 +96,10 @@ port as the cabinet port won't change.
 
 One of the fuses is blown. You need to open the control box and replace them.
 
+The two fuses are:
+- 5A/80V Automotive Fuse ([buying link](https://www.newark.com/multicomp-pro/mp008147/fuse-automotive-5a-80vdc-rohs/dp/69AJ0523))
+- 7.5A/80V Automotive Fuse ([buying link](https://www.newark.com/multicomp-pro/mp008148/fuse-automotive-7-5a-80vdc-rohs/dp/69AJ0524))
+
 ### Schunk WSG 50 Gripper Driver (Optional)
 
 Connect the WSG gripper to the same switch that is connecting the local computer with
