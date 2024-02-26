@@ -4,7 +4,7 @@ import numpy as np
 
 from manipulation.meshcat_utils import WsgButton
 from manipulation.scenarios import AddIiwaDifferentialIK
-from manipulation.station import load_scenario
+from manipulation.station import LoadScenario
 from pydrake.all import (
     ApplySimulatorConfig,
     DiagramBuilder,
@@ -56,7 +56,7 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
 
     builder = DiagramBuilder()
 
-    scenario = load_scenario(data=scenario_data)
+    scenario = LoadScenario(data=scenario_data)
     station: IiwaHardwareStationDiagram = builder.AddNamedSystem(
         "station",
         IiwaHardwareStationDiagram(

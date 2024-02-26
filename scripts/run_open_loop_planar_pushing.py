@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from manipulation.station import load_scenario
+from manipulation.station import LoadScenario
 from pydrake.all import (
     ApplySimulatorConfig,
     DiagramBuilder,
@@ -30,7 +30,7 @@ def main(
 ) -> None:
     builder = DiagramBuilder()
 
-    scenario = load_scenario(data=scenario_str)
+    scenario = LoadScenario(data=scenario_str)
     station: IiwaHardwareStationDiagram = builder.AddNamedSystem(
         "station",
         IiwaHardwareStationDiagram(

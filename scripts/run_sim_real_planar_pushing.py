@@ -14,7 +14,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from manipulation.station import load_scenario
+from manipulation.station import LoadScenario
 from optitrack import optitrack_frame_t, optitrack_rigid_body_t
 from pydrake.all import (
     ApplySimulatorConfig,
@@ -64,7 +64,7 @@ def move_real(
     """
     builder = DiagramBuilder()
 
-    scenario = load_scenario(data=scenario_str)
+    scenario = LoadScenario(data=scenario_str)
     station: IiwaHardwareStationDiagram = builder.AddNamedSystem(
         "station",
         IiwaHardwareStationDiagram(
@@ -178,7 +178,7 @@ def move_sim_to_start(
     """Move the simulated iiwa to the initial positions of the real iiwa."""
     builder = DiagramBuilder()
 
-    scenario = load_scenario(data=scenario_str)
+    scenario = LoadScenario(data=scenario_str)
     station: IiwaHardwareStationDiagram = builder.AddNamedSystem(
         "station",
         IiwaHardwareStationDiagram(
@@ -235,7 +235,7 @@ def move_sim(
     """Move the simulated iiwa according to the recorded joint positions."""
     builder = DiagramBuilder()
 
-    scenario = load_scenario(data=scenario_str)
+    scenario = LoadScenario(data=scenario_str)
     station: IiwaHardwareStationDiagram = builder.AddNamedSystem(
         "station",
         IiwaHardwareStationDiagram(

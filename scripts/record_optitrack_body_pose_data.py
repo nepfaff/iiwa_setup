@@ -7,7 +7,7 @@ from typing import List
 
 import numpy as np
 
-from manipulation.station import load_scenario
+from manipulation.station import LoadScenario
 from pydrake.all import (
     AddFrameTriadIllustration,
     ApplySimulatorConfig,
@@ -38,7 +38,7 @@ def main(
 ) -> None:
     builder = DiagramBuilder()
 
-    scenario = load_scenario(data=scenario_str)
+    scenario = LoadScenario(data=scenario_str)
     station: IiwaHardwareStationDiagram = builder.AddNamedSystem(
         "station",
         IiwaHardwareStationDiagram(
