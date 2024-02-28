@@ -92,6 +92,11 @@ port as the cabinet port won't change.
 2. Manually operate the robot out of the limits using the tablet
 3. Re-enter automatic mode
 
+If no KRF mode exists, then do the following:
+1. Unmaster the joint whose limits are exceeded
+2. Use the teach pendant in T1 mode to move the joint back inside its allowed range
+3. Master the joint
+
 #### "Voltage of intermediate circuit too low" error
 
 One of the fuses is blown. You need to open the control box and replace them.
