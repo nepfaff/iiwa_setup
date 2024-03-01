@@ -156,6 +156,11 @@ to install the wheel from inside the poetry virtual environment.
 
 ### Controlling the robot in `torque_only` mode
 
+**NOTE:** It is recommended to calibrate the joint torque sensors before running the
+robot in `torque_only` mode. This can be achieved by running the
+`PositionAndGMSReferencing` application on the teach pendant. Not calibrating the
+sensors is a likely cause of high position tracking errors.
+
 1. Start the `DrakeFRITorqueOnlyDriver` on the teach pendant.
 2. Optional: Make sure that the iiwa driver is build by running `bazel build //...` from
 `drake-iiwa-driver`.
