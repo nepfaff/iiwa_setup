@@ -1,0 +1,10 @@
+import os
+
+from typing import List
+
+
+def get_package_xmls() -> List[str]:
+    """Returns a list of package.xml files."""
+    return [
+        os.path.abspath("models/package.xml"),
+    ]

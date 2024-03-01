@@ -42,6 +42,8 @@ from pydrake.all import (
     torque_enabled,
 )
 
+from iiwa_setup.util import get_package_xmls
+
 
 class PlantUpdater(LeafSystem):
     """
@@ -314,11 +316,9 @@ class IiwaHardwareStationDiagram(Diagram):
         if isinstance(control_mode, str):
             control_mode = ParseIiwaControlMode(control_mode)
 
-        iiwa_setup_models_package = os.path.join(
-            os.path.dirname(__file__), "../../models/package.xml"
-        )
-        if os.path.exists(iiwa_setup_models_package):
-            package_xmls.append(iiwa_setup_models_package)
+        for package_path in get_package_xmls():
+            if os.path.exists(package_path):
+                package_xmls.append(package_path)
 
         builder = DiagramBuilder()
 
