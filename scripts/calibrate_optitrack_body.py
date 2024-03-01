@@ -150,6 +150,7 @@ if __name__ == "__main__":
     model_drivers:
         iiwa: !IiwaDriver
             lcm_bus: "default"
+            control_mode: position_only
     lcm_buses:
         default:
             lcm_url: ""

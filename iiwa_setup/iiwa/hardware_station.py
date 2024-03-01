@@ -290,13 +290,13 @@ class IiwaHardwareStationDiagram(Diagram):
         scenario: Scenario,
         has_wsg: bool,
         use_hardware: bool,
-        control_mode: Union[IiwaControlMode, str] = IiwaControlMode.kPositionAndTorque,
+        control_mode: Union[IiwaControlMode, str] = IiwaControlMode.kPositionOnly,
         create_point_clouds: bool = False,
         package_xmls: List[str] = [],
     ):
         """
         Args:
-            scenario (Scenario): The scenario to use. This must contain an iiwa.
+            scenario (Scenario): The scenario to use. This must contain one iiwa.
             has_wsg (bool): Whether the station has a WSG gripper. This gripper must be
                 part of the scenario. If false, then the iiwa controller plant will not
                 have a WSG gripper (tracking is less accurate if there is a mismatch).

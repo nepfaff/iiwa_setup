@@ -30,6 +30,7 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
         iiwa: !IiwaDriver
             lcm_bus: "default"
             hand_model_name: wsg
+            control_mode: position_only
         wsg: !SchunkWsgDriver {}
     lcm_buses:
         default:
@@ -48,6 +49,7 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
     model_drivers:
         iiwa: !IiwaDriver
             lcm_bus: "default"
+            control_mode: position_only
     lcm_buses:
         default:
             lcm_url: ""
