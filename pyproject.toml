@@ -7,9 +7,10 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "~3.10"
+drake = {version = ">=0.0.20240302", source = "drake-nightly"}
+# drake = "^1.26.0"
 numpy = "^1.25.2"
-drake = "^1.26.0"
-manipulation = {git = "https://github.com/RussTedrake/manipulation.git", rev = "d87bd43609003f487155da6dff5840bcd3f9b64a"}
+manipulation = {git = "https://github.com/RussTedrake/manipulation.git", rev = "bb9d3844da27f48ce4ede39b6bacb4d216829a22"}
 tqdm = "^4.66.1"
 hydra-core = "^1.3.2"
 omegaconf = "^2.3.0"
@@ -21,6 +22,11 @@ pre-commit = "^3.4.0"
 black = "^23.12.1"
 isort = "^5.12.0"
 poetry-pre-commit-plugin = "^0.1.2"
+
+[[tool.poetry.source]]
+name = "drake-nightly"
+url = "https://drake-packages.csail.mit.edu/whl/nightly/"
+priority = "supplemental"
 
 [tool.isort]
 profile = 'black'
