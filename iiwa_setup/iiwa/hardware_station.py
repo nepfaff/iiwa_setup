@@ -381,12 +381,14 @@ class IiwaHardwareStationDiagram(Diagram):
             )
 
         # Export internal station ports
-        builder.ExportOutput(
-            self.internal_station.GetOutputPort("body_poses"), "body_poses"
-        )
-        builder.ExportOutput(
-            self.internal_station.GetOutputPort("query_object"), "query_object"
-        )
+        exported_internal_station_port_names = [
+            "body_poses",
+            "query_object",
+        ]
+        for port_name in exported_internal_station_port_names:
+            builder.ExportOutput(
+                self.internal_station.GetOutputPort(port_name), port_name
+            )
         internal_plant = self.internal_station.get_plant()
         for i in range(internal_plant.num_model_instances()):
             model_instance = ModelInstanceIndex(i)
@@ -395,41 +397,22 @@ class IiwaHardwareStationDiagram(Diagram):
             builder.ExportOutput(
                 self.internal_station.GetOutputPort(port_name), port_name
             )
+            exported_internal_station_port_names.append(port_name)
 
         # Export external station ports
-        if position_enabled(control_mode):
-            builder.ExportInput(
-                self._external_station.GetInputPort("iiwa.position"), "iiwa.position"
-            )
-        if torque_enabled(control_mode):
-            builder.ExportInput(
-                self._external_station.GetInputPort("iiwa.torque"),
-                "iiwa.torque",
-            )
-        if has_wsg:
-            builder.ExportInput(
-                self._external_station.GetInputPort("wsg.position"), "wsg.position"
-            )
-        builder.ExportOutput(
-            self._external_station.GetOutputPort("iiwa.position_commanded"),
-            "iiwa.position_commanded",
-        )
-        builder.ExportOutput(
-            self._external_station.GetOutputPort("iiwa.position_measured"),
-            "iiwa.position_measured",
-        )
-        builder.ExportOutput(
-            self._external_station.GetOutputPort("iiwa.velocity_estimated"),
-            "iiwa.velocity_estimated",
-        )
-        builder.ExportOutput(
-            self._external_station.GetOutputPort("iiwa.torque_measured"),
-            "iiwa.torque_measured",
-        )
-        builder.ExportOutput(
-            self._external_station.GetOutputPort("iiwa.torque_commanded"),
-            "iiwa.torque_commanded",
-        )
+        for i in range(self._external_station.num_input_ports()):
+            port = self._external_station.get_input_port(i)
+            name = port.get_name()
+            if (
+                name not in exported_internal_station_port_names
+                and not builder.IsConnectedOrExported(port)
+            ):
+                builder.ExportInput(port, name)
+        for i in range(self._external_station.num_output_ports()):
+            port = self._external_station.get_output_port(i)
+            name = port.get_name()
+            if name not in exported_internal_station_port_names:
+                builder.ExportOutput(port, name)
         if (
             len(scenario.cameras.items()) > 0
             and create_point_clouds
@@ -443,39 +426,12 @@ class IiwaHardwareStationDiagram(Diagram):
                 builder=builder,
                 meshcat=self.external_meshcat,
             )
-        else:
-            depth_img_to_pcd_systems = None
-        for _, camera_config in scenario.cameras.items():
-            name = camera_config.name
-            builder.ExportOutput(
-                self._external_station.GetOutputPort(f"{name}.rgb_image"),
-                f"{name}.rgb_image",
-            )
-            builder.ExportOutput(
-                self._external_station.GetOutputPort(f"{name}.depth_image"),
-                f"{name}.depth_image",
-            )
-            builder.ExportOutput(
-                self._external_station.GetOutputPort(f"{name}.label_image"),
-                f"{name}.label_image",
-            )
-            if depth_img_to_pcd_systems is not None:
+            for _, camera_config in scenario.cameras.items():
+                name = camera_config.name
                 builder.ExportOutput(
                     depth_img_to_pcd_systems[name].point_cloud_output_port(),
                     f"{name}.point_cloud",
                 )
-
-        # Export external state output
-        iiwa_state_mux: Multiplexer = builder.AddSystem(Multiplexer([7, 7]))
-        builder.Connect(
-            self._external_station.GetOutputPort("iiwa.position_measured"),
-            iiwa_state_mux.get_input_port(0),
-        )
-        builder.Connect(
-            self._external_station.GetOutputPort("iiwa.velocity_estimated"),
-            iiwa_state_mux.get_input_port(1),
-        )
-        builder.ExportOutput(iiwa_state_mux.get_output_port(), "iiwa.state_estimated")
 
         builder.BuildInto(self)
 
