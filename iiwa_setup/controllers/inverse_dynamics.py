@@ -38,6 +38,7 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
         controller_plant: MultibodyPlant,
         kp_gains: np.ndarray = np.full(7, 600),
         damping_ratios: np.ndarray = np.full(7, 0.2),
+        iiwa_model_instance_name: str = "iiwa",
     ):
         """
         Args:
@@ -45,6 +46,8 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
             controller_plant: The controller plant for computing the inverse dynamics.
             kp_gains: The proportional gains for the controller.
             damping_ratios: The damping ratios for the controller.
+            iiwa_model_instance_name: The model instance name of the iiwa in the
+                scenario.
         """
         super().__init__()
 
@@ -87,7 +90,7 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
         # Cancel out the iiwa control box's internal gravity compensation.
         iiwa_only_controller_plant = MakeMultibodyPlant(
             scenario=scenario,
-            model_instance_names=["iiwa"],
+            model_instance_names=[iiwa_model_instance_name],
             package_xmls=get_package_xmls(),
         )
         # Keep the controller plant alive during the Diagram lifespan.
