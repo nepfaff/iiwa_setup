@@ -8,10 +8,10 @@ from pydrake.all import (
     Gain,
     InverseDynamics,
     InverseDynamicsController,
+    MultibodyPlant,
     SharedPointerSystem,
 )
 
-from iiwa_setup.iiwa import IiwaHardwareStationDiagram
 from iiwa_setup.util import get_package_xmls
 
 
@@ -34,16 +34,22 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
 
     def __init__(
         self,
-        station: IiwaHardwareStationDiagram,
         scenario: Scenario,
+        controller_plant: MultibodyPlant,
         kp_gains: np.ndarray = np.full(7, 600),
         damping_ratios: np.ndarray = np.full(7, 0.2),
     ):
+        """
+        Args:
+            scenario: The scenario in which the controller will be used.
+            controller_plant: The controller plant for computing the inverse dynamics.
+            kp_gains: The proportional gains for the controller.
+            damping_ratios: The damping ratios for the controller.
+        """
         super().__init__()
 
         builder = DiagramBuilder()
-        controler_plant = station.get_iiwa_controller_plant()
-        num_positions = controler_plant.num_positions()
+        num_positions = controller_plant.num_positions()
 
         torque_adder: Adder = builder.AddNamedSystem(
             "torque_adder", Adder(2, num_positions)
@@ -54,7 +60,7 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
         inverse_dynamics_controller: InverseDynamicsController = builder.AddNamedSystem(
             "inverse_dynamics_controller",
             InverseDynamicsController(
-                controler_plant,
+                controller_plant,
                 kp=kp_gains,
                 ki=[1] * num_positions,
                 kd=2 * damping_ratios * np.sqrt(kp_gains),
