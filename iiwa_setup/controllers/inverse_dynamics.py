@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 
 from manipulation.station import MakeMultibodyPlant, Scenario
@@ -39,6 +41,7 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
         kp_gains: np.ndarray = np.full(7, 600),
         damping_ratios: np.ndarray = np.full(7, 0.2),
         iiwa_model_instance_name: str = "iiwa",
+        package_xmls: List[str] = [],
     ):
         """
         Args:
@@ -48,6 +51,7 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
             damping_ratios: The damping ratios for the controller.
             iiwa_model_instance_name: The model instance name of the iiwa in the
                 scenario.
+            package_xmls: The package XMLs needed to parse the scenario.
         """
         super().__init__()
 
@@ -91,7 +95,7 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
         iiwa_only_controller_plant = MakeMultibodyPlant(
             scenario=scenario,
             model_instance_names=[iiwa_model_instance_name],
-            package_xmls=get_package_xmls(),
+            package_xmls=get_package_xmls() + package_xmls,
         )
         # Keep the controller plant alive during the Diagram lifespan.
         builder.AddNamedSystem(
