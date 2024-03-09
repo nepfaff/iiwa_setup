@@ -260,6 +260,9 @@ class InternalStationDiagram(Diagram):
         for i in range(self._plant.num_model_instances()):
             model_instance = ModelInstanceIndex(i)
             model_instance_name = self._plant.GetModelInstanceName(model_instance)
+            if "iiwa" in model_instance_name:
+                # The iiwa state should be obtained from the external station
+                continue
             builder.ExportOutput(
                 self._plant_updater.get_state_output_port(model_instance),
                 f"{model_instance_name}_state",
@@ -394,10 +397,11 @@ class IiwaHardwareStationDiagram(Diagram):
             model_instance = ModelInstanceIndex(i)
             model_instance_name = internal_plant.GetModelInstanceName(model_instance)
             port_name = f"{model_instance_name}_state"
-            builder.ExportOutput(
-                self.internal_station.GetOutputPort(port_name), port_name
-            )
-            exported_internal_station_port_names.append(port_name)
+            if self.internal_station.HasOutputPort(port_name):
+                builder.ExportOutput(
+                    self.internal_station.GetOutputPort(port_name), port_name
+                )
+                exported_internal_station_port_names.append(port_name)
 
         # Export external station ports
         for i in range(self._external_station.num_input_ports()):
