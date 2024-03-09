@@ -165,8 +165,8 @@ sensors is a likely cause of high position tracking errors.
 2. Optional: Make sure that the iiwa driver is build by running `bazel build //...` from
 `drake-iiwa-driver`.
 3. Run the iiwa driver by running
-`./bazel-bin/kuka-driver/kuka_driver --torque_only=true --time_step 0.001` from
-`drake-iiwa-driver`.
+`./bazel-bin/kuka-driver/kuka_driver --torque_only=true --time_step 0.001 --realtime`
+from `drake-iiwa-driver`.
 4. Run the desired script with the `--use_hardware` flag.
 
 #### Obtaining slightly better performance
@@ -176,7 +176,7 @@ pinning the processes to the same core and increasing their priority.
 
 1. Make sure that you can run `chrt` without sudo privileges:
 `sudo setcap cap_sys_nice=eip /usr/bin/chrt`. This is only required once.
-2. Run the desired script using `taskset -c 1,29 chrt -r 20 python {...} --use_hardware`.
+2. Run the desired script using `taskset -c 1,29 chrt -r 90 python {...} --use_hardware`.
 
 ## Optitrack
 
