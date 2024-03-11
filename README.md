@@ -165,8 +165,9 @@ sensors is a likely cause of high position tracking errors.
 2. Optional: Make sure that the iiwa driver is build by running `bazel build //...` from
 `drake-iiwa-driver`.
 3. Run the iiwa driver by running
-`./bazel-bin/kuka-driver/kuka_driver --torque_only=true --time_step 0.001 --realtime`
-from `drake-iiwa-driver`.
+`sudo ./bazel-bin/kuka-driver/kuka_driver --torque_only=true --time_step 0.001 --realtime`
+from `drake-iiwa-driver` (`sudo` is required for `--realtime` which helps but is not
+required).
 4. Run the desired script with the `--use_hardware` flag.
 
 #### Obtaining slightly better performance
