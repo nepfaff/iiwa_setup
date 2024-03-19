@@ -1435,8 +1435,8 @@ vhacdx = ">=0.0.5"
 [package.source]
 type = "git"
 url = "https://github.com/RussTedrake/manipulation.git"
-reference = "bb9d3844da27f48ce4ede39b6bacb4d216829a22"
-resolved_reference = "bb9d3844da27f48ce4ede39b6bacb4d216829a22"
+reference = "e8b830dfeec83e5e416e0a13c1693a67228fec83"
+resolved_reference = "e8b830dfeec83e5e416e0a13c1693a67228fec83"
 
 [[package]]
 name = "markdown-it-py"
@@ -3665,4 +3665,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "7ea63181c197747ae793e0f2277e31802ce40c0a15d373208064aa72d04b94b2"
+content-hash = "1421d21fe9d613e3c400b80b36562cae0aaa063304761d74d00fcb0121a52cf2"
