@@ -5,11 +5,11 @@ from typing import Optional, Union
 import numpy as np
 
 from pydrake.all import (
+    CompositeTrajectory,
     GcsTrajectoryOptimization,
     HPolyhedron,
     MultibodyPlant,
     Point,
-    Trajectory,
 )
 
 
@@ -18,7 +18,7 @@ def plan_unconstrained_gcs_path_start_to_goal(
     q_goal: np.ndarray,
     q_start: np.ndarray,
     velocity_limits: Optional[np.ndarray] = None,
-) -> Union[Trajectory, None]:
+) -> Union[CompositeTrajectory, None]:
     """Plan an unconstrained trajectory from a start to a goal in joint space using GCS.
 
     Args:
@@ -28,7 +28,7 @@ def plan_unconstrained_gcs_path_start_to_goal(
         velocity_limits (Optional[np.ndarray]): The optional velocity limits.
 
     Returns:
-        Union[Trajectory, None]: The trajectory if success and None if failure.
+        Union[CompositeTrajectory, None]: The trajectory if success and None if failure.
     """
     num_positions = plant.num_positions()
     assert num_positions == len(q_goal) == len(q_start)
