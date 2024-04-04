@@ -115,8 +115,10 @@ accessed through http://192.168.1.20/. Try to control the gripper through the we
 interface. If this doesn't work, then controlling it through the driver also won't work.
 
 [Drake's Schunk driver](https://github.com/RobotLocomotion/drake-schunk-driver) must be
-installed manually to use the WSG programatically. Once build, the driver can be run
-using `bazel run //src:schunk_driver`.
+installed manually to use the WSG programatically. Once built, the driver can be run
+using `bazel run //src:schunk_driver`. The driver requires Bazel 6. Multiple Bazel
+versions can be managed by installing `bazelisk from [here](https://github.com/bazelbuild/bazelisk/releases).
+The Bazel version will then be read from the `.bazeliskrc` file in the repo.
 
 #### Networking troubeshooting
 
@@ -158,8 +160,7 @@ to install the wheel from inside the poetry virtual environment.
 
 **NOTE:** It is recommended to calibrate the joint torque sensors before running the
 robot in `torque_only` mode. This can be achieved by running the
-`PositionAndGMSReferencing` application on the teach pendant. Not calibrating the
-sensors is a likely cause of high position tracking errors.
+`PositionAndGMSReferencing` application on the teach pendant.
 
 1. Start the `DrakeFRITorqueOnlyDriver` on the teach pendant.
 2. Optional: Make sure that the iiwa driver is build by running `bazel build //...` from
