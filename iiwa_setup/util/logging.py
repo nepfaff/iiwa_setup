@@ -1,6 +1,6 @@
 import logging
 
-from pydrake.all import BodyFrame, Context, DiscreteValues, LeafSystem
+from pydrake.all import Context, DiscreteValues, LeafSystem, RigidBodyFrame
 
 
 class NoDrakeDifferentialIKFilter(logging.Filter):
@@ -11,10 +11,10 @@ class NoDrakeDifferentialIKFilter(logging.Filter):
 class BodyPoseLogger(LeafSystem):
     """System for logging a body's pose."""
 
-    def __init__(self, body_frame: BodyFrame, period_s: float):
+    def __init__(self, body_frame: RigidBodyFrame, period_s: float):
         """
         Args:
-            body_frame (BodyFrame): The body frame of the body.
+            body_frame (RigidBodyFrame): The body frame of the body.
             period_s (float): The logging period.
         """
         super().__init__()
