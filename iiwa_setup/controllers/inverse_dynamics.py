@@ -1,10 +1,11 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
 from manipulation.station import MakeMultibodyPlant, Scenario
 from pydrake.all import (
     Adder,
+    Context,
     Diagram,
     DiagramBuilder,
     Gain,
@@ -38,6 +39,7 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
         self,
         scenario: Scenario,
         controller_plant: MultibodyPlant,
+        controller_plant_context: Optional[Context] = None,
         kp_gains: np.ndarray = np.full(7, 600),
         damping_ratios: np.ndarray = np.full(7, 0.2),
         iiwa_model_instance_name: str = "iiwa",
@@ -47,6 +49,9 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
         Args:
             scenario: The scenario in which the controller will be used.
             controller_plant: The controller plant for computing the inverse dynamics.
+            controller_plant_context: A context for the controller plant with
+                non-default dynamics parameters. More accurate parameters will improve
+                controller performance and enable lower gains.
             kp_gains: The proportional gains for the controller.
             damping_ratios: The damping ratios for the controller.
             iiwa_model_instance_name: The model instance name of the iiwa in the
@@ -72,6 +77,7 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
                 ki=[1] * num_positions,
                 kd=2 * damping_ratios * np.sqrt(kp_gains),
                 has_reference_acceleration=True,
+                plant_context=controller_plant_context,
             ),
         )
         builder.ExportInput(
