@@ -147,6 +147,16 @@ Build and install the wheel as described
 [here](https://github.com/RobotLocomotion/optitrack-driver#to-build-a-wheel). Make sure
 to install the wheel from inside the poetry virtual environment.
 
+### FT 300-S Driver (Optional)
+
+The [FT 300-S LCM driver](https://github.com/nepfaff/ft-300s-driver) must be installed
+according to its README instructions.
+
+The included LCM messages must be added to the python path (after building):
+```
+export PYTHONPATH=~/path_to_parent_dir/ft_300s_driver/bazel-bin/lcmtypes/ft_300s/:${PYTHONPATH}
+```
+
 ## Executing code on the real robot
 
 1. Start the `DrakeFRIPositionDriver` or `DrakeDRITorqueDriver` on the teach pendant.

@@ -5,7 +5,12 @@ from typing import List, Optional
 
 import numpy as np
 
-from optitrack import optitrack_frame_t, optitrack_rigid_body_t
+try:
+    from optitrack import optitrack_frame_t, optitrack_rigid_body_t
+except ImportError:
+    logging.warning("optitrack module not found. Skipping import.")
+    optitrack_frame_t = optitrack_rigid_body_t = object
+
 from pydrake.all import (
     AbstractValue,
     BasicVector,
