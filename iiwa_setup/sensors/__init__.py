@@ -1,4 +1,4 @@
-from .ft_sensor import FTSensorDataReceiver
+from .ft_sensor import ForceSensorEvaluator, FTSensorDataReceiver
 from .opitrack import (
     OptitrackFrameSource,
     OptitrackObjectTransformUpdaterDiagram,
