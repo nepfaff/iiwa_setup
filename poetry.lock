@@ -1404,7 +1404,7 @@ numpy = {version = "*", markers = "python_version < \"3.12\""}
 
 [[package]]
 name = "manipulation"
-version = "2024.04.08"
+version = "2024.04.22"
 description = "MIT 6.421 - Robotic Manipulation"
 optional = false
 python-versions = "<4.0,>=3.10"
@@ -1413,7 +1413,7 @@ develop = false
 
 [package.dependencies]
 cloudpickle = "2.2.1"
-drake = ">=1.27.0"
+drake = ">=1.28.0"
 gradescope-utils = ">=0.4.0"
 mpld3 = ">=0.5.6"
 nevergrad = ">=0.4.3"
@@ -1430,8 +1430,8 @@ vhacdx = ">=0.0.5"
 [package.source]
 type = "git"
 url = "https://github.com/RussTedrake/manipulation.git"
-reference = "dd7851d2a8af76462a37f20604886872f56be5b0"
-resolved_reference = "dd7851d2a8af76462a37f20604886872f56be5b0"
+reference = "341772fa8ee4dbc121f44b1b46ad352dac5e34a0"
+resolved_reference = "341772fa8ee4dbc121f44b1b46ad352dac5e34a0"
 
 [[package]]
 name = "markdown-it-py"
@@ -3660,4 +3660,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "acfb37f90264cf7f22902380363bfd4c02c360b72aaa6f170755a767c9db86a4"
+content-hash = "b9133ac34f19e5a49b44d66a523ab2e6f778e799a42c4b2ce308e5055107f741"

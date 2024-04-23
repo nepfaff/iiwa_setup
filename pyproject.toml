@@ -10,7 +10,7 @@ python = "~3.10"
 # drake = {version = ">=0.0.20240409", source = "drake-nightly"}
 drake = "^1.28.0"
 numpy = "^1.25.2"
-manipulation = {git = "https://github.com/RussTedrake/manipulation.git", rev = "dd7851d2a8af76462a37f20604886872f56be5b0"}
+manipulation = {git = "https://github.com/RussTedrake/manipulation.git", rev = "341772fa8ee4dbc121f44b1b46ad352dac5e34a0"}
 tqdm = "^4.66.1"
 hydra-core = "^1.3.2"
 omegaconf = "^2.3.0"
