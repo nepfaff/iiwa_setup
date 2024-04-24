@@ -144,7 +144,7 @@ if __name__ == "__main__":
         file: package://iiwa_setup/sugar_box_reference.dmd.yaml
 
     plant_config:
-        time_step: 0.001
+        time_step: 0.005
         contact_model: "hydroelastic_with_fallback"
         discrete_contact_approximation: "sap"
     model_drivers:

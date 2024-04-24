@@ -43,7 +43,7 @@ def main(use_hardware: bool, has_wsg: bool) -> None:
         file: package://iiwa_setup/iiwa7.dmd.yaml
     plant_config:
         # For some reason, this requires a small timestep
-        time_step: 0.0001
+        time_step: 0.005
         contact_model: "hydroelastic"
         discrete_contact_approximation: "sap"
     model_drivers:

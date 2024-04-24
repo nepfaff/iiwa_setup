@@ -166,6 +166,11 @@ export PYTHONPATH=~/path_to_parent_dir/ft_300s_driver/bazel-bin/lcmtypes/ft_300s
 `drake-schunk-driver`.
 4. Run the desired script with the `--use_hardware` flag.
 
+### Note about timesteps
+The `torque_only` driver runs at 1000Hz while all other controllers run at 200Hz. The
+specified timesteps should match the controllers, i.e. 0.001 for the `torque_only`
+driver and 0.005 for all other drivers.
+
 ### Controlling the robot in `torque_only` mode
 
 **NOTE:** It is recommended to calibrate the joint torque sensors before running the

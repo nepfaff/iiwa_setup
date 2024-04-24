@@ -432,8 +432,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=args.log_level)
     logging.getLogger("drake").addFilter(NoDrakeDifferentialIKFilter())
 
-    # Cannot use bigger timesteps on the real robot
-    timestep = 0.001
+    # Cannot use bigger timesteps on the real robot in position only mode
+    timestep = 0.005
     scenario_str = f"""
     directives:
     - add_directives:

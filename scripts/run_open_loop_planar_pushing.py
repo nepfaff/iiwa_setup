@@ -123,8 +123,8 @@ if __name__ == "__main__":
     - add_directives:
         file: package://iiwa_setup/iiwa7_with_planar_pusher.dmd.yaml
     plant_config:
-        # Cannot use bigger timesteps on the real robot
-        time_step: 0.001
+        # Cannot use bigger timesteps on the real robot in position only mode
+        time_step: 0.005
         contact_model: "hydroelastic"
         discrete_contact_approximation: "sap"
     model_drivers:

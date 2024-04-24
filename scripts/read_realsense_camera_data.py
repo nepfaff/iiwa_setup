@@ -104,7 +104,7 @@ if __name__ == "__main__":
             translation: [1.5, 0.1, 0.5]
             rotation: !Rpy {{deg: [-90, 0, 100]}}
     plant_config:
-        time_step: 1e-5
+        time_step: 0.005
         contact_model: "hydroelastic"
         discrete_contact_approximation: "sap"
     cameras:

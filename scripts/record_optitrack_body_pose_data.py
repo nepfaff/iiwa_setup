@@ -190,7 +190,7 @@ if __name__ == "__main__":
     - add_directives:
         file: {args.object_directive}
     plant_config:
-        time_step: 0.001
+        time_step: 0.005
         contact_model: "hydroelastic_with_fallback"
         discrete_contact_approximation: "sap"
     model_drivers:
