@@ -74,7 +74,7 @@ class InverseDynamicsControllerWithGravityCompensationCancellation(Diagram):
             InverseDynamicsController(
                 controller_plant,
                 kp=kp_gains,
-                ki=[1] * num_positions,
+                ki=[0] * num_positions,
                 kd=2 * damping_ratios * np.sqrt(kp_gains),
                 has_reference_acceleration=True,
                 plant_context=controller_plant_context,
