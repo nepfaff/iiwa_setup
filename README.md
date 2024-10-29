@@ -117,7 +117,7 @@ interface. If this doesn't work, then controlling it through the driver also won
 [Drake's Schunk driver](https://github.com/RobotLocomotion/drake-schunk-driver) must be
 installed manually to use the WSG programatically. Once built, the driver can be run
 using `bazel run //src:schunk_driver`. The driver requires Bazel 6. Multiple Bazel
-versions can be managed by installing `bazelisk from [here](https://github.com/bazelbuild/bazelisk/releases).
+versions can be managed by installing `bazelisk` from [here](https://github.com/bazelbuild/bazelisk/releases).
 The Bazel version will then be read from the `.bazeliskrc` file in the repo.
 
 #### Networking troubeshooting
