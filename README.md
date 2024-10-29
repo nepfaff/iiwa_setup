@@ -133,6 +133,17 @@ instructions and that the gripper's ethernet cable is plugged into the switch.
 3. Click on `Home` and wait until the homing sequence is finished
 4. Re-try commanding the gripper via the web interface
 
+#### Network error during movement
+
+This might be due to cable issues. Check for cable issues by opening the webpage and
+locating the "Link Active" blinking/ switching light indicator. The blue light
+continuously switches between the left and right circle while the gripper is connected.
+Pull/ twist one of the cables and see whether the light stops switching. If this is the
+case, then there is probably a cable error and the cable might need replacing.
+
+Note that the gripper takes a few minutes to reconnect after the connection ist lost.
+The connection is re-established once the webpage loads again.
+
 #### Getting system info failed
 
 Follow the [wsg driver setup instructions](https://github.com/RobotLocomotion/drake-schunk-driver?tab=readme-ov-file#configuring-the-gripper).
