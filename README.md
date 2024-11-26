@@ -197,6 +197,11 @@ from `drake-iiwa-driver` (`sudo` is required for `--realtime` which helps but is
 required).
 4. Run the desired script with the `--use_hardware` flag.
 
+Note that you might need to increase the conservative default torque limits in the driver
+code. See [here](https://github.com/nepfaff/drake-iiwa-driver/tree/increase_default_torque_limits)
+for how to do this. This is necessary if the motions appear very jerky and the driver
+terminates with "Robot is in an unsafe state".
+
 #### Obtaining slightly better performance
 
 You might be able to achieve slightly better performance in `torque_only` mode by
