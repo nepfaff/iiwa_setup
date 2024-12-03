@@ -37,4 +37,6 @@ def reparameterize_with_toppra(
     toppra.AddJointVelocityLimit(-velocity_limits, velocity_limits)
     toppra.AddJointAccelerationLimit(-acceleration_limits, acceleration_limits)
     time_trajectory = toppra.SolvePathParameterization()
+    if time_trajectory is None:
+        raise RuntimeError("TOPPRA failed to solve the problem.")
     return PathParameterizedTrajectory(trajectory, time_trajectory)
