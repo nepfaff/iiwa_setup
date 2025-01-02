@@ -100,6 +100,7 @@ If no KRF mode exists, then do the following:
 #### "Voltage of intermediate circuit too low" error
 
 One of the fuses is blown. You need to open the control box and replace them.
+In most cases, it is sufficient to replace the 5A fuse.
 
 The two fuses are:
 - 5A/80V Automotive Fuse ([buying link](https://www.newark.com/multicomp-pro/mp008147/fuse-automotive-5a-80vdc-rohs/dp/69AJ0523))
