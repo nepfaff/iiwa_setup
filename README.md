@@ -121,6 +121,10 @@ using `bazel run //src:schunk_driver`. The driver requires Bazel 6. Multiple Baz
 versions can be managed by installing `bazelisk` from [here](https://github.com/bazelbuild/bazelisk/releases).
 The Bazel version will then be read from the `.bazeliskrc` file in the repo.
 
+#### Cable
+
+The WSG requires a Male M8 4-Pin A Coding to RJ45 Connector.
+
 #### Networking troubeshooting
 
 Check that one host shows up when using `nmap -sP 192.168.1.201`. and that the website
