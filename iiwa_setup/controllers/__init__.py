@@ -3,3 +3,4 @@ from .inverse_dynamics import (
 )
 from .open_loop_plannar_pushing import OpenLoopPlanarPushingController
 from .plan_and_move_to_positions import PlanAndMoveToPositionsUnconstrainedController
+from .system_id_data_collection import SystemIDDataCollectionController
