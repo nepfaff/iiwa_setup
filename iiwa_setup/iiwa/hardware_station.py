@@ -5,10 +5,9 @@ from typing import List, Union
 
 import numpy as np
 
+from manipulation.scenarios import AddIiwa, AddWsg
 from manipulation.station import (
-    AddIiwa,
     AddPointClouds,
-    AddWsg,
     ConfigureParser,
     MakeHardwareStation,
     Scenario,
