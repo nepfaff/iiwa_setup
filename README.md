@@ -154,6 +154,17 @@ The connection is re-established once the webpage loads again.
 Follow the [wsg driver setup instructions](https://github.com/RobotLocomotion/drake-schunk-driver?tab=readme-ov-file#configuring-the-gripper).
 In particular, the gripper might be set to ICP instead of UDP.
 
+#### Can't connect to the gripper/ nothing else works
+
+Reset the gripper's config on its MicroSD card:
+1. Power off the gripper
+2. Remove the MicroSD card (behind the black plate with two small screws on the gipper side)
+3. Insert it into your computer
+4. Navigate to the config folder
+5. Rename the file `config/system.cfg` to `config/system.old`
+6. Re-insert the MicroSD card into the gripper
+7. The gripper should now be discoverable on its default IP address
+
 ### Optitrack Driver (Optional)
 
 [Drake's Optitrack driver](https://github.com/RobotLocomotion/optitrack-driver) must be
